@@ -4,14 +4,9 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { Menu, Sparkles, X } from "lucide-react";
+import { PUBLIC_HOME_NAV_LINKS } from "@/components/marketing/public-nav-links";
 import { useFeedback } from "@/components/providers/feedback-provider";
 import { MotionLink } from "@/components/motion/motion-link";
-
-const navLinks = [
-  { href: "#platform", label: "Platform" },
-  { href: "#features", label: "Features" },
-  { href: "#how-it-works", label: "How it works" },
-] as const;
 
 export function PublicHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -44,15 +39,15 @@ export function PublicHeader() {
         </div>
 
         <nav className="hidden items-center justify-center gap-8 md:flex">
-          {navLinks.map(({ href, label }) => (
-            <a
+          {PUBLIC_HOME_NAV_LINKS.map(({ href, label }) => (
+            <Link
               key={href}
               href={href}
               className="text-sm text-muted-foreground transition-colors hover:text-foreground"
               onClick={() => feedback("tap", "light")}
             >
               {label}
-            </a>
+            </Link>
           ))}
         </nav>
 
@@ -98,10 +93,9 @@ export function PublicHeader() {
             className="overflow-hidden border-t border-border md:hidden"
           >
             <nav className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-4 sm:px-6">
-              {navLinks.map(({ href, label }, index) => (
-                <motion.a
+              {PUBLIC_HOME_NAV_LINKS.map(({ href, label }, index) => (
+                <motion.div
                   key={href}
-                  href={href}
                   initial={
                     settings.reducedMotion
                       ? false
@@ -109,11 +103,15 @@ export function PublicHeader() {
                   }
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className="rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                  onClick={handleAnchorClick}
                 >
-                  {label}
-                </motion.a>
+                  <Link
+                    href={href}
+                    className="block rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    onClick={handleAnchorClick}
+                  >
+                    {label}
+                  </Link>
+                </motion.div>
               ))}
               <div className="mt-2 flex flex-col gap-2 border-t border-border pt-4">
                 <Link

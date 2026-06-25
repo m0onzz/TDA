@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  ArrowRight,
   Bell,
   Clock,
   Rocket,
@@ -19,6 +18,7 @@ import {
   StaggerItem,
 } from "@/components/motion/fade-in";
 import { MotionLink } from "@/components/motion/motion-link";
+import { useScrollToHash } from "@/hooks/use-scroll-to-hash";
 
 const stats = [
   { value: "48h", label: "Fulfillment SLA target" },
@@ -88,6 +88,8 @@ const steps = [
 ] as const;
 
 export function LandingPage() {
+  useScrollToHash();
+
   return (
     <div className="relative flex min-h-screen flex-col">
       <AmbientBackground />
@@ -118,16 +120,9 @@ export function LandingPage() {
                   growing revenue, not manual ops.
                 </p>
               </FadeIn>
-              <FadeIn delay={0.28} className="text-center">
-                <div className="mt-10 flex justify-center">
-                  <MotionLink href="/login" className="btn-secondary px-6 py-3">
-                    Sign in to dashboard
-                  </MotionLink>
-                </div>
-              </FadeIn>
             </div>
 
-            <FadeIn delay={0.36} className="mx-auto mt-16 w-full max-w-4xl">
+            <FadeIn delay={0.28} className="mx-auto mt-16 w-full max-w-4xl">
               <div id="platform" className="scroll-mt-20">
                 <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   {stats.map(({ value, label }) => (
@@ -237,17 +232,10 @@ export function LandingPage() {
                 Create an account to connect suppliers, configure Discord
                 alerts, and list your first product in minutes.
               </p>
-              <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-                <MotionLink
-                  href="/login?mode=signup"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-background bg-background px-6 py-3 text-sm font-medium text-foreground transition-opacity hover:opacity-90 sm:w-auto"
-                >
-                  Create free account
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </MotionLink>
+              <div className="mt-10 flex justify-center">
                 <MotionLink
                   href="/login"
-                  className="inline-flex w-full items-center justify-center rounded-md border border-background/30 px-6 py-3 text-sm transition-colors hover:bg-background/10 sm:w-auto"
+                  className="inline-flex items-center justify-center rounded-md border border-background/30 px-6 py-3 text-sm transition-colors hover:bg-background/10"
                 >
                   Sign in
                 </MotionLink>

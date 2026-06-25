@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState, type FormEvent } from "react";
 import { Loader2, Sparkles } from "lucide-react";
@@ -180,6 +181,20 @@ export function LoginForm() {
             submitLabel
           )}
         </button>
+
+        {mode === "signup" ? (
+          <p className="text-center text-xs text-muted-foreground">
+            By creating an account, you agree to our{" "}
+            <Link href="/terms" className="underline underline-offset-2 hover:text-foreground">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground">
+              Privacy Policy
+            </Link>
+            .
+          </p>
+        ) : null}
       </form>
 
       {successMessage ? (

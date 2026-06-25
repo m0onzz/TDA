@@ -1,5 +1,4 @@
 import { AdminHeader } from "@/components/layout/admin-header";
-import { CredentialManager } from "@/components/settings/credential-manager";
 import { DiscordWebhookSettings } from "@/components/settings/discord-webhook-settings";
 import { ExperienceSettings } from "@/components/settings/experience-settings";
 import { PayoutSettings } from "@/components/settings/payout-settings";
@@ -19,7 +18,6 @@ export default function SettingsPage() {
         <DiscordWebhookSettings />
         <ExperienceSettings />
         <TikTokShopSettings />
-        <CredentialManager />
       </div>
     </>
   );

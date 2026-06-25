@@ -9,6 +9,7 @@ import {
   revokeCredential,
   storeCredential,
 } from "@/lib/services/credential-service";
+import { formatMaskedCredentialKey } from "@/lib/credentials/metadata";
 import {
   getTikTokServerEnvStatus,
   parseTikTokShopCredentialJson,
@@ -212,7 +213,7 @@ export async function getTikTokSetupStatusAction(): Promise<
 
 export async function saveTikTokShopCredentialAction(
   input: z.infer<typeof saveTikTokShopCredentialInputSchema>
-): Promise<SettingsActionResult<{ id: string }>> {
+): Promise<SettingsActionResult<{ id: string; maskedKey: string }>> {
   const auth = await requireUser();
   if (!auth.success) return auth;
 
@@ -239,7 +240,11 @@ export async function saveTikTokShopCredentialAction(
     };
   }
 
-  const secret = serializeTikTokShopCredential(validated.data);
+  const secret = serializeTikTokShopCredential({
+    ...validated.data,
+    appKey: validated.data.appKey ?? process.env.TIKTOK_APP_KEY?.trim(),
+    appSecret: validated.data.appSecret ?? process.env.TIKTOK_APP_SECRET?.trim(),
+  });
 
   try {
     const id = await storeCredential(auth.data.id, {
@@ -251,20 +256,40 @@ export async function saveTikTokShopCredentialAction(
 
     revalidatePath("/settings");
 
-    return { success: true, data: { id } };
+    return {
+      success: true,
+      data: {
+        id,
+        maskedKey: formatMaskedCredentialKey(
+          "tiktok_shop",
+          buildAccessTokenHint(validated.data.accessToken)
+        ),
+      },
+    };
   } catch (error) {
     console.error("[saveTikTokShopCredentialAction]", error);
     return {
       success: false,
       code: "SERVER_ERROR",
-      message: "Failed to save TikTok Shop credentials securely.",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to save TikTok Shop credentials securely.",
     };
   }
 }
 
+function buildAccessTokenHint(accessToken: string): string {
+  const trimmed = accessToken.trim();
+  if (trimmed.length <= 4) {
+    return "****";
+  }
+  return `...${trimmed.slice(-4)}`;
+}
+
 export async function saveTikTokShopJsonCredentialAction(
   input: z.infer<typeof saveTikTokShopJsonCredentialInputSchema>
-): Promise<SettingsActionResult<{ id: string }>> {
+): Promise<SettingsActionResult<{ id: string; maskedKey: string }>> {
   const auth = await requireUser();
   if (!auth.success) return auth;
 
@@ -288,7 +313,11 @@ export async function saveTikTokShopJsonCredentialAction(
     };
   }
 
-  const secret = serializeTikTokShopCredential(validated.data);
+  const secret = serializeTikTokShopCredential({
+    ...validated.data,
+    appKey: validated.data.appKey ?? process.env.TIKTOK_APP_KEY?.trim(),
+    appSecret: validated.data.appSecret ?? process.env.TIKTOK_APP_SECRET?.trim(),
+  });
 
   try {
     const id = await storeCredential(auth.data.id, {
@@ -300,13 +329,25 @@ export async function saveTikTokShopJsonCredentialAction(
 
     revalidatePath("/settings");
 
-    return { success: true, data: { id } };
+    return {
+      success: true,
+      data: {
+        id,
+        maskedKey: formatMaskedCredentialKey(
+          "tiktok_shop",
+          buildAccessTokenHint(validated.data.accessToken)
+        ),
+      },
+    };
   } catch (error) {
     console.error("[saveTikTokShopJsonCredentialAction]", error);
     return {
       success: false,
       code: "SERVER_ERROR",
-      message: "Failed to save TikTok Shop credentials securely.",
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to save TikTok Shop credentials securely.",
     };
   }
 }

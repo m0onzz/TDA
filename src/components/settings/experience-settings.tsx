@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { Volume2, VolumeX, Vibrate, Smartphone } from "lucide-react";
 import { useFeedback } from "@/components/providers/feedback-provider";
-import { isHapticsSupported } from "@/lib/feedback/haptics";
+import { useHapticsSupported } from "@/hooks/use-haptics-supported";
 import { cn } from "@/lib/utils";
 
 interface ToggleRowProps {
@@ -71,7 +71,7 @@ function ToggleRow({
 
 export function ExperienceSettings() {
   const { settings, setSoundEnabled, setHapticsEnabled } = useFeedback();
-  const hapticsAvailable = isHapticsSupported();
+  const hapticsAvailable = useHapticsSupported();
 
   return (
     <div className="panel-padded space-y-6">

@@ -310,6 +310,38 @@
     @apply absolute inset-0 opacity-[0.03];
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
+
+  .legal-prose {
+    @apply space-y-5 text-sm leading-relaxed text-foreground/90;
+  }
+
+  .legal-prose h2 {
+    @apply mt-10 text-base font-bold text-foreground;
+  }
+
+  .legal-prose h2:first-of-type {
+    @apply mt-8;
+  }
+
+  .legal-prose h3 {
+    @apply mt-6 text-sm font-semibold text-foreground;
+  }
+
+  .legal-prose p {
+    @apply text-muted-foreground;
+  }
+
+  .legal-prose strong {
+    @apply font-semibold text-foreground;
+  }
+
+  .legal-prose ul {
+    @apply list-disc space-y-2 pl-5 text-muted-foreground;
+  }
+
+  .legal-link {
+    @apply text-foreground underline underline-offset-2 transition-colors hover:opacity-80;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -62,7 +62,7 @@ export type Database = {
           provider: CredentialProviderDb;
           name: string;
           lookup_key: string;
-          vault_secret_id: string;
+          vault_secret_id: string | null;
           key_hint: string | null;
           expires_at: string | null;
           is_active: boolean;
@@ -77,7 +77,7 @@ export type Database = {
           provider: CredentialProviderDb;
           name: string;
           lookup_key: string;
-          vault_secret_id: string;
+          vault_secret_id?: string | null;
           key_hint?: string | null;
           expires_at?: string | null;
           is_active?: boolean;
@@ -92,7 +92,7 @@ export type Database = {
           provider?: CredentialProviderDb;
           name?: string;
           lookup_key?: string;
-          vault_secret_id?: string;
+          vault_secret_id?: string | null;
           key_hint?: string | null;
           expires_at?: string | null;
           is_active?: boolean;

@@ -136,6 +136,18 @@ export function TikTokShopSettings() {
 
       clearForm();
       setSuccessMessage("TikTok Shop credentials saved securely.");
+      setStatus((current) =>
+        current
+          ? {
+              ...current,
+              storedCredential: {
+                configured: true,
+                credentialId: result.data.id,
+                maskedKey: result.data.maskedKey,
+              },
+            }
+          : current
+      );
       loadStatus();
     });
   }
@@ -158,6 +170,18 @@ export function TikTokShopSettings() {
 
       clearForm();
       setSuccessMessage("TikTok Shop credentials saved securely.");
+      setStatus((current) =>
+        current
+          ? {
+              ...current,
+              storedCredential: {
+                configured: true,
+                credentialId: result.data.id,
+                maskedKey: result.data.maskedKey,
+              },
+            }
+          : current
+      );
       loadStatus();
     });
   }

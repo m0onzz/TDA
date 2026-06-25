@@ -39,9 +39,20 @@ export async function listCredentials(userId: string): Promise<ApiCredential[]> 
   return (data ?? []) as ApiCredential[];
 }
 
+function isVaultStorageError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("vault") ||
+    normalized.includes("pgsodium") ||
+    normalized.includes("create_secret") ||
+    normalized.includes("update_secret")
+  );
+}
+
 async function upsertCredentialBackup(
   credentialId: string,
-  secret: string
+  secret: string,
+  options?: { required?: boolean }
 ): Promise<void> {
   const admin = createAdminClient();
   const ciphertext = encryptCredentialSecret(secret);
@@ -56,8 +67,85 @@ async function upsertCredentialBackup(
   );
 
   if (error) {
-    throw new Error(`Failed to store credential backup: ${error.message}`);
+    const message = `Failed to store credential backup: ${error.message}`;
+    if (options?.required) {
+      throw new Error(
+        `${message} Run supabase/migrations/20250625120000_credential_secret_backups.sql in the Supabase SQL Editor.`
+      );
+    }
+    console.warn("[credential-service]", message);
   }
+}
+
+async function storeCredentialViaEncryptedBackup(
+  userId: string,
+  input: StoreCredentialInput
+): Promise<string> {
+  const admin = createAdminClient();
+  const keyHint = buildKeyHint(input.secret);
+
+  const { data: existing, error: existingError } = await admin
+    .from("api_credentials")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("lookup_key", input.lookupKey)
+    .maybeSingle();
+
+  if (existingError) {
+    throw new Error(
+      `Failed to load existing credential: ${existingError.message}`
+    );
+  }
+
+  let credentialId = existing?.id;
+
+  if (credentialId) {
+    const { error: updateError } = await admin
+      .from("api_credentials")
+      .update({
+        provider: input.provider,
+        name: input.name ?? input.lookupKey,
+        key_hint: keyHint,
+        supplier_id: input.supplierId ?? null,
+        metadata: (input.metadata ?? {}) as Json,
+        is_active: true,
+        vault_secret_id: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", credentialId);
+
+    if (updateError) {
+      throw new Error(`Failed to update credential: ${updateError.message}`);
+    }
+  } else {
+    const { data: inserted, error: insertError } = await admin
+      .from("api_credentials")
+      .insert({
+        user_id: userId,
+        provider: input.provider,
+        lookup_key: input.lookupKey,
+        name: input.name ?? input.lookupKey,
+        key_hint: keyHint,
+        supplier_id: input.supplierId ?? null,
+        metadata: (input.metadata ?? {}) as Json,
+        is_active: true,
+        vault_secret_id: null,
+      })
+      .select("id")
+      .single();
+
+    if (insertError || !inserted?.id) {
+      throw new Error(
+        insertError?.message ??
+          "Failed to insert credential. Run supabase/migrations/20250626120000_credential_vault_optional.sql in Supabase if vault_secret_id is still required."
+      );
+    }
+
+    credentialId = inserted.id;
+  }
+
+  await upsertCredentialBackup(credentialId, input.secret, { required: true });
+  return credentialId;
 }
 
 async function readCredentialBackup(credentialId: string): Promise<string | null> {
@@ -110,6 +198,14 @@ export async function storeCredential(
   });
 
   if (error) {
+    if (isVaultStorageError(error.message)) {
+      console.warn(
+        "[credential-service] Vault storage unavailable, using encrypted backup:",
+        error.message
+      );
+      return storeCredentialViaEncryptedBackup(userId, input);
+    }
+
     throw new Error(`Failed to store credential: ${error.message}`);
   }
 
@@ -148,12 +244,44 @@ export async function getCredentialSecret(
 ): Promise<string> {
   const admin = createAdminClient();
 
+  const { data: credentialRow, error: credentialError } = await admin
+    .from("api_credentials")
+    .select("vault_secret_id")
+    .eq("id", credentialId)
+    .eq("user_id", userId)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (credentialError) {
+    throw new Error(`Failed to load credential: ${credentialError.message}`);
+  }
+
+  if (!credentialRow) {
+    throw new Error("Credential not found or inactive.");
+  }
+
+  if (!credentialRow.vault_secret_id) {
+    const backupOnly = await readCredentialBackup(credentialId);
+    if (backupOnly) {
+      return backupOnly;
+    }
+
+    throw new Error(
+      "Credential secret not found. Re-save your TikTok credentials in Settings."
+    );
+  }
+
   const { data, error } = await admin.rpc("get_api_credential_secret", {
     p_credential_id: credentialId,
     p_user_id: userId,
   });
 
   if (error) {
+    const backup = await readCredentialBackup(credentialId);
+    if (backup) {
+      return backup;
+    }
+
     throw new Error(`Failed to decrypt credential: ${error.message}`);
   }
 
