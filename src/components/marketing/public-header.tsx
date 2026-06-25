@@ -29,19 +29,21 @@ export function PublicHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <MotionLink
-          href="/"
-          className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-foreground"
-          onClick={() => setMobileOpen(false)}
-        >
-          <span className="flex h-8 w-8 items-center justify-center rounded-md border-2 border-foreground bg-foreground text-background">
-            <Sparkles className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
-          </span>
-          TDA
-        </MotionLink>
+      <div className="mx-auto grid h-16 max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="flex min-w-0 justify-start">
+          <MotionLink
+            href="/"
+            className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-foreground"
+            onClick={() => setMobileOpen(false)}
+          >
+            <span className="flex h-8 w-8 items-center justify-center rounded-md border-2 border-foreground bg-foreground text-background">
+              <Sparkles className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
+            </span>
+            TDA
+          </MotionLink>
+        </div>
 
-        <nav className="hidden items-center gap-8 md:flex">
+        <nav className="hidden items-center justify-center gap-8 md:flex">
           {navLinks.map(({ href, label }) => (
             <a
               key={href}
@@ -54,34 +56,36 @@ export function PublicHeader() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 md:flex">
-          <MotionLink
-            href="/login"
-            className="rounded-lg px-4 py-2 text-sm transition-colors hover:bg-accent"
-          >
-            Login
-          </MotionLink>
-          <MotionLink
-            href="/login?mode=signup"
-            className="rounded-lg bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
-          >
-            Sign up
-          </MotionLink>
-        </div>
+        <div className="flex items-center justify-end gap-3">
+          <div className="hidden items-center gap-3 md:flex">
+            <MotionLink
+              href="/login"
+              className="rounded-lg px-4 py-2 text-sm transition-colors hover:bg-accent"
+            >
+              Login
+            </MotionLink>
+            <MotionLink
+              href="/login?mode=signup"
+              className="rounded-lg bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
+            >
+              Sign up
+            </MotionLink>
+          </div>
 
-        <button
-          type="button"
-          className="inline-flex items-center justify-center rounded-lg p-2 md:hidden"
-          aria-expanded={mobileOpen}
-          aria-label={mobileOpen ? "Close menu" : "Open menu"}
-          onClick={toggleMobileMenu}
-        >
-          {mobileOpen ? (
-            <X className="h-5 w-5" aria-hidden="true" />
-          ) : (
-            <Menu className="h-5 w-5" aria-hidden="true" />
-          )}
-        </button>
+          <button
+            type="button"
+            className="inline-flex items-center justify-center rounded-lg p-2 md:hidden"
+            aria-expanded={mobileOpen}
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            onClick={toggleMobileMenu}
+          >
+            {mobileOpen ? (
+              <X className="h-5 w-5" aria-hidden="true" />
+            ) : (
+              <Menu className="h-5 w-5" aria-hidden="true" />
+            )}
+          </button>
+        </div>
       </div>
 
       <AnimatePresence>

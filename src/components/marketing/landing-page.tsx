@@ -96,29 +96,29 @@ export function LandingPage() {
       <main className="flex-1">
         <section className="relative overflow-hidden border-b border-border">
           <div className="hero-glow absolute inset-0" aria-hidden="true" />
-          <div className="relative mx-auto max-w-6xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8 lg:py-32">
-            <div className="mx-auto max-w-3xl text-center">
-              <FadeIn delay={0.05}>
-                <p className="inline-flex items-center gap-2 rounded-full border border-border bg-card/80 px-4 py-1.5 text-xs uppercase tracking-wide text-muted-foreground backdrop-blur">
+          <div className="relative mx-auto max-w-6xl px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8 lg:py-32">
+            <div className="mx-auto flex w-full max-w-3xl flex-col items-center">
+              <FadeIn delay={0.05} className="text-center">
+                <p className="flex w-fit items-center gap-2 rounded-full border border-border bg-card/80 px-4 py-1.5 text-xs uppercase tracking-wide text-muted-foreground backdrop-blur">
                   <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
                   TikTok Shop automation
                 </p>
               </FadeIn>
-              <FadeIn delay={0.12}>
+              <FadeIn delay={0.12} className="w-full text-center">
                 <h1 className="mt-6 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
                   Scale your{" "}
                   <span className="text-shimmer">dropshipping pipeline</span>{" "}
                   on autopilot
                 </h1>
               </FadeIn>
-              <FadeIn delay={0.2}>
+              <FadeIn delay={0.2} className="w-full text-center">
                 <p className="mt-6 text-lg leading-relaxed text-muted-foreground sm:text-xl">
                   TDA handles product discovery, AI pricing, TikTok Shop
                   listing, and US-warehouse fulfillment — so you can focus on
                   growing revenue, not manual ops.
                 </p>
               </FadeIn>
-              <FadeIn delay={0.28}>
+              <FadeIn delay={0.28} className="text-center">
                 <div className="mt-10 flex justify-center">
                   <MotionLink href="/login" className="btn-secondary px-6 py-3">
                     Sign in to dashboard
@@ -127,11 +127,8 @@ export function LandingPage() {
               </FadeIn>
             </div>
 
-            <FadeIn delay={0.36}>
-              <div
-                id="platform"
-                className="scroll-mt-20 mx-auto mt-16 max-w-4xl"
-              >
+            <FadeIn delay={0.36} className="mx-auto mt-16 w-full max-w-4xl">
+              <div id="platform" className="scroll-mt-20">
                 <StaggerContainer className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   {stats.map(({ value, label }) => (
                     <StaggerItem key={label} className="h-full min-w-0">
