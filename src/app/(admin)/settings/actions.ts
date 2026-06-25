@@ -4,10 +4,13 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getAuthenticatedUser } from "@/lib/api/auth";
 import {
+  getCredentialSecretByLookupKey,
   listCredentialMetadata,
   revokeCredential,
   storeCredential,
 } from "@/lib/services/credential-service";
+import { parseTikTokShopCredentials } from "@/lib/tiktok/shop-client";
+import { testTikTokShopConnection } from "@/lib/tiktok/shop-request";
 import type { CredentialMetadata } from "@/lib/credentials/metadata";
 import type { CredentialProvider } from "@/types/credentials";
 import { CREDENTIAL_PROVIDER_LABELS } from "@/types/credentials";
@@ -143,6 +146,41 @@ export async function revokeCredentialAction(
       success: false,
       code: "SERVER_ERROR",
       message: "Failed to revoke credential.",
+    };
+  }
+}
+
+export async function testTikTokConnectionAction(): Promise<
+  SettingsActionResult<{ ok: boolean; message: string; shopName?: string }>
+> {
+  const auth = await requireUser();
+  if (!auth.success) return auth;
+
+  try {
+    const secret = await getCredentialSecretByLookupKey(
+      auth.data.id,
+      "tiktok_shop:primary"
+    );
+    const credentials = secret ? parseTikTokShopCredentials(secret) : null;
+    const result = await testTikTokShopConnection(credentials);
+
+    return {
+      success: true,
+      data: {
+        ok: result.ok,
+        message: result.message,
+        shopName: result.shopName,
+      },
+    };
+  } catch (error) {
+    console.error("[testTikTokConnectionAction]", error);
+    return {
+      success: false,
+      code: "SERVER_ERROR",
+      message:
+        error instanceof Error
+          ? error.message
+          : "TikTok Shop API connection test failed.",
     };
   }
 }

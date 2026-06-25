@@ -38,16 +38,19 @@ export type Database = {
           email: string;
           tiktok_shop_id: string | null;
           theme: string;
+          store_settings: Json;
         };
         Insert: {
           id: string;
           email: string;
           tiktok_shop_id?: string | null;
           theme?: string;
+          store_settings?: Json;
         };
         Update: {
           tiktok_shop_id?: string | null;
           theme?: string;
+          store_settings?: Json;
         };
         Relationships: [];
       };
@@ -95,6 +98,24 @@ export type Database = {
           is_active?: boolean;
           metadata?: Json;
           created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      credential_secret_backups: {
+        Row: {
+          credential_id: string;
+          ciphertext: string;
+          updated_at: string;
+        };
+        Insert: {
+          credential_id: string;
+          ciphertext: string;
+          updated_at?: string;
+        };
+        Update: {
+          credential_id?: string;
+          ciphertext?: string;
           updated_at?: string;
         };
         Relationships: [];

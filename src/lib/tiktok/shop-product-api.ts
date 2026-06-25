@@ -1,14 +1,13 @@
 import {
+  ensureShopCipher,
+  resolveTikTokShopCredentials,
+  tikTokShopRequest,
+} from "@/lib/tiktok/shop-request";
+import {
   normalizeTikTokShopImageUrls,
   resolveTikTokShopImageUrl,
 } from "@/lib/tiktok/tiktok-image-url";
 import type { TikTokShopCredentials } from "@/lib/tiktok/shop-client";
-
-interface TikTokApiEnvelope<T> {
-  code?: number;
-  message?: string;
-  data?: T;
-}
 
 interface TikTokMainImage {
   uri?: string;
@@ -27,47 +26,6 @@ export interface TikTokShopProductRecord {
   title: string;
   sellerSkus: string[];
   imageUrls: string[];
-}
-
-function getApiBaseUrl(): string {
-  return (
-    process.env.TIKTOK_SHOP_API_BASE_URL ??
-    "https://open-api.tiktokglobalshop.com"
-  );
-}
-
-function buildShopQuery(credentials: TikTokShopCredentials): string {
-  if (!credentials.shopCipher) {
-    return "";
-  }
-  return `?shop_cipher=${encodeURIComponent(credentials.shopCipher)}`;
-}
-
-async function tikTokShopRequest<T>(
-  credentials: TikTokShopCredentials,
-  path: string,
-  init?: RequestInit
-): Promise<T> {
-  const response = await fetch(`${getApiBaseUrl()}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      "x-tts-access-token": credentials.accessToken,
-      ...(init?.headers ?? {}),
-    },
-  });
-
-  const json = (await response.json()) as TikTokApiEnvelope<T>;
-
-  if (!response.ok || json.code !== 0) {
-    throw new Error(json.message ?? `TikTok Shop API error (${response.status})`);
-  }
-
-  if (!json.data) {
-    throw new Error("TikTok Shop API returned an empty payload");
-  }
-
-  return json.data;
 }
 
 function extractImageValuesFromMainImages(
@@ -124,6 +82,19 @@ function mapProductRecord(input: {
   };
 }
 
+async function withResolvedCredentials(
+  credentials: TikTokShopCredentials
+) {
+  const resolved = resolveTikTokShopCredentials(credentials);
+  if (!resolved) {
+    throw new Error(
+      "TikTok app_key and app_secret are required for live API calls."
+    );
+  }
+
+  return ensureShopCipher(resolved);
+}
+
 /**
  * Fetches a single TikTok Shop listing by TikTok product ID.
  */
@@ -131,6 +102,8 @@ export async function getTikTokShopProductById(
   credentials: TikTokShopCredentials,
   tiktokProductId: string
 ): Promise<TikTokShopProductRecord | null> {
+  const active = await withResolvedCredentials(credentials);
+
   const data = await tikTokShopRequest<{
     product?: {
       id?: string;
@@ -139,8 +112,8 @@ export async function getTikTokShopProductById(
       skus?: TikTokProductSku[];
     };
   }>(
-    credentials,
-    `/product/202309/products/${encodeURIComponent(tiktokProductId)}${buildShopQuery(credentials)}`
+    active,
+    `/product/202309/products/${encodeURIComponent(tiktokProductId)}`
   );
 
   return mapProductRecord(data.product ?? {});
@@ -168,10 +141,11 @@ export async function listTikTokShopProducts(
   products: TikTokShopProductRecord[];
   nextPageToken: string | null;
 }> {
-  const query = buildShopQuery(credentials);
+  const active = await withResolvedCredentials(credentials);
+
   const data = await tikTokShopRequest<SearchProductsResponse>(
-    credentials,
-    `/product/202309/products/search${query}`,
+    active,
+    "/product/202309/products/search",
     {
       method: "POST",
       body: JSON.stringify({

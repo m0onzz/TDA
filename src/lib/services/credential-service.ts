@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  decryptCredentialSecret,
+  encryptCredentialSecret,
+} from "@/lib/credentials/secret-cipher";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
@@ -35,6 +39,51 @@ export async function listCredentials(userId: string): Promise<ApiCredential[]> 
   return (data ?? []) as ApiCredential[];
 }
 
+async function upsertCredentialBackup(
+  credentialId: string,
+  secret: string
+): Promise<void> {
+  const admin = createAdminClient();
+  const ciphertext = encryptCredentialSecret(secret);
+
+  const { error } = await admin.from("credential_secret_backups").upsert(
+    {
+      credential_id: credentialId,
+      ciphertext,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "credential_id" }
+  );
+
+  if (error) {
+    throw new Error(`Failed to store credential backup: ${error.message}`);
+  }
+}
+
+async function readCredentialBackup(credentialId: string): Promise<string | null> {
+  const admin = createAdminClient();
+
+  const { data, error } = await admin
+    .from("credential_secret_backups")
+    .select("ciphertext")
+    .eq("credential_id", credentialId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to read credential backup: ${error.message}`);
+  }
+
+  if (!data?.ciphertext) {
+    return null;
+  }
+
+  try {
+    return decryptCredentialSecret(data.ciphertext);
+  } catch {
+    return null;
+  }
+}
+
 /** Safe metadata for client — never includes vault_secret_id or decrypted secrets. */
 export async function listCredentialMetadata(
   userId: string
@@ -67,6 +116,8 @@ export async function storeCredential(
   if (!data) {
     throw new Error("Failed to store credential: no ID returned");
   }
+
+  await upsertCredentialBackup(data, input.secret);
 
   return data;
 }
@@ -106,11 +157,18 @@ export async function getCredentialSecret(
     throw new Error(`Failed to decrypt credential: ${error.message}`);
   }
 
-  if (!data) {
-    throw new Error("Credential secret not found");
+  if (data && data.trim().length > 0) {
+    return data;
   }
 
-  return data;
+  const backup = await readCredentialBackup(credentialId);
+  if (backup) {
+    return backup;
+  }
+
+  throw new Error(
+    "Credential secret not found. Re-save your TikTok API token in Settings — the encrypted backup may be missing or Vault is not configured on this database."
+  );
 }
 
 export async function getCredentialSecretByLookupKey(

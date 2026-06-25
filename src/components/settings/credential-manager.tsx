@@ -5,6 +5,7 @@ import {
   getCredentialsAction,
   revokeCredentialAction,
   saveCredentialAction,
+  testTikTokConnectionAction,
 } from "@/app/(admin)/settings/actions";
 import { UnauthorizedAlert } from "@/components/settings/unauthorized-alert";
 import { AlertBanner } from "@/components/ui/alert-banner";
@@ -38,6 +39,7 @@ export function CredentialManager() {
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [isSaving, startSaveTransition] = useTransition();
   const [isRefreshing, startRefreshTransition] = useTransition();
+  const [isTestingConnection, startTestTransition] = useTransition();
 
   const loadCredentials = useCallback(() => {
     startRefreshTransition(async () => {
@@ -88,6 +90,26 @@ export function CredentialManager() {
     });
   }
 
+  function handleTestConnection(): void {
+    setError(null);
+    setSuccessMessage(null);
+
+    startTestTransition(async () => {
+      const result = await testTikTokConnectionAction();
+
+      if (!result.success) {
+        setError(result.message);
+        return;
+      }
+
+      if (result.data.ok) {
+        setSuccessMessage(result.data.message);
+      } else {
+        setError(result.data.message);
+      }
+    });
+  }
+
   async function handleRevoke(id: string) {
     setError(null);
     setSuccessMessage(null);
@@ -130,7 +152,8 @@ export function CredentialManager() {
         <p className="mt-2">
           Add your TikTok Shop access token to list products live. Without
           credentials, listing runs in simulation mode so you can test the full
-          workflow locally.
+          workflow locally. If listing fails after saving, revoke the credential
+          and save it again.
         </p>
       </div>
 
@@ -138,17 +161,40 @@ export function CredentialManager() {
         <div>
           <h2 className="text-sm uppercase tracking-wide">Add or rotate key</h2>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            Secrets are encrypted in Supabase Vault. For TikTok Shop, paste your
-            access token or JSON with{" "}
+            For live TikTok API calls, paste JSON with{" "}
             <code className="rounded border border-border bg-muted px-1">
               access_token
-            </code>{" "}
-            and optional{" "}
+            </code>
+            ,{" "}
+            <code className="rounded border border-border bg-muted px-1">
+              app_key
+            </code>
+            , and{" "}
+            <code className="rounded border border-border bg-muted px-1">
+              app_secret
+            </code>
+            . Optional:{" "}
             <code className="rounded border border-border bg-muted px-1">
               shop_cipher
             </code>
-            .
+            . You can also set{" "}
+            <code className="rounded border border-border bg-muted px-1">
+              TIKTOK_APP_KEY
+            </code>{" "}
+            /{" "}
+            <code className="rounded border border-border bg-muted px-1">
+              TIKTOK_APP_SECRET
+            </code>{" "}
+            on the server.
           </p>
+          <pre className="mt-3 overflow-x-auto rounded-md border border-border bg-muted/30 p-3 text-left text-xs text-muted-foreground">
+{`{
+  "access_token": "your_token",
+  "app_key": "your_app_key",
+  "app_secret": "your_app_secret",
+  "shop_cipher": "optional_shop_cipher"
+}`}
+          </pre>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -187,13 +233,23 @@ export function CredentialManager() {
           </label>
         </div>
 
-        <button
-          type="submit"
-          disabled={isSaving || !secret.trim()}
-          className="btn-primary"
-        >
-          {isSaving ? "Saving…" : "Save securely"}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="submit"
+            disabled={isSaving || !secret.trim()}
+            className="btn-primary"
+          >
+            {isSaving ? "Saving…" : "Save securely"}
+          </button>
+          <button
+            type="button"
+            onClick={handleTestConnection}
+            disabled={isTestingConnection || isSaving}
+            className="btn-secondary"
+          >
+            {isTestingConnection ? "Testing…" : "Test TikTok connection"}
+          </button>
+        </div>
       </form>
 
       {successMessage ? (
