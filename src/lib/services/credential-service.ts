@@ -49,6 +49,19 @@ function isVaultStorageError(message: string): boolean {
   );
 }
 
+function isMissingBackupTableError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("credential_secret_backups") &&
+    (normalized.includes("could not find") ||
+      normalized.includes("does not exist") ||
+      normalized.includes("schema cache"))
+  );
+}
+
+const CREDENTIAL_MIGRATION_HINT =
+  "Run supabase/migrations/20250625120000_credential_secret_backups.sql and 20250626120000_credential_vault_optional.sql in the Supabase SQL Editor, then re-save your TikTok credentials in Settings.";
+
 async function upsertCredentialBackup(
   credentialId: string,
   secret: string,
@@ -68,10 +81,8 @@ async function upsertCredentialBackup(
 
   if (error) {
     const message = `Failed to store credential backup: ${error.message}`;
-    if (options?.required) {
-      throw new Error(
-        `${message} Run supabase/migrations/20250625120000_credential_secret_backups.sql in the Supabase SQL Editor.`
-      );
+    if (options?.required || isMissingBackupTableError(error.message)) {
+      throw new Error(`${message} ${CREDENTIAL_MIGRATION_HINT}`);
     }
     console.warn("[credential-service]", message);
   }
@@ -158,6 +169,14 @@ async function readCredentialBackup(credentialId: string): Promise<string | null
     .maybeSingle();
 
   if (error) {
+    if (isMissingBackupTableError(error.message)) {
+      console.warn(
+        "[credential-service] credential_secret_backups table missing:",
+        error.message
+      );
+      return null;
+    }
+
     throw new Error(`Failed to read credential backup: ${error.message}`);
   }
 
@@ -267,7 +286,7 @@ export async function getCredentialSecret(
     }
 
     throw new Error(
-      "Credential secret not found. Re-save your TikTok credentials in Settings."
+      `Credential secret not found. ${CREDENTIAL_MIGRATION_HINT}`
     );
   }
 
@@ -295,7 +314,7 @@ export async function getCredentialSecret(
   }
 
   throw new Error(
-    "Credential secret not found. Re-save your TikTok API token in Settings — the encrypted backup may be missing or Vault is not configured on this database."
+    `Credential secret not found. ${CREDENTIAL_MIGRATION_HINT}`
   );
 }
 

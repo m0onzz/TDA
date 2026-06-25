@@ -1,4 +1,7 @@
-import { describeMissingTikTokCredentials } from "@/lib/tiktok/credential-format";
+import {
+  describeMissingTikTokCredentials,
+  formatTikTokAppKeyApiError,
+} from "@/lib/tiktok/credential-format";
 import type { TikTokShopCredentials } from "@/lib/tiktok/shop-client";
 import {
   buildTikTokShopTimestamp,
@@ -72,13 +75,20 @@ function buildSignedUrl(
   body?: string
 ): string {
   const timestamp = buildTikTokShopTimestamp();
-  const queryParams: Record<string, string> = {
+  const rawParams: Record<string, string | undefined> = {
     app_key: credentials.appKey,
     timestamp,
-    shop_cipher: credentials.shopCipher ?? "",
-    shop_id: credentials.shopId ?? "",
+    ...(credentials.shopCipher ? { shop_cipher: credentials.shopCipher } : {}),
+    ...(credentials.shopId ? { shop_id: credentials.shopId } : {}),
     ...extraQuery,
   };
+
+  const queryParams = Object.fromEntries(
+    Object.entries(rawParams).filter(
+      (entry): entry is [string, string] =>
+        entry[1] !== undefined && entry[1].trim() !== ""
+    )
+  ) as Record<string, string>;
 
   const sign = signTikTokShopRequest({
     path,
@@ -133,10 +143,12 @@ export async function tikTokShopRequest<T>(
   const json = (await response.json()) as TikTokApiEnvelope<T>;
 
   if (!response.ok || json.code !== 0) {
-    throw new TikTokShopApiError(
-      json.message ?? `TikTok Shop API error (${response.status})`,
-      { code: json.code, requestId: json.request_id }
-    );
+    const rawMessage =
+      json.message ?? `TikTok Shop API error (${response.status})`;
+    throw new TikTokShopApiError(formatTikTokAppKeyApiError(rawMessage), {
+      code: json.code,
+      requestId: json.request_id,
+    });
   }
 
   if (json.data === undefined) {
@@ -220,18 +232,33 @@ export async function testTikTokShopConnection(
     };
   }
 
-  const withShop = await ensureShopCipher(resolved);
-  const shops = await listAuthorizedTikTokShops(withShop);
-  const shop =
-    shops.find((item) => item.shopCipher === withShop.shopCipher) ?? shops[0];
+  try {
+    const withShop = await ensureShopCipher(resolved);
+    const shops = await listAuthorizedTikTokShops(withShop);
+    const shop =
+      shops.find((item) => item.shopCipher === withShop.shopCipher) ?? shops[0];
 
-  return {
-    ok: true,
-    mode: "live",
-    shopName: shop?.shopName,
-    shopCipher: withShop.shopCipher,
-    message: shop
-      ? `Connected to ${shop.shopName}. TikTok Shop API is responding.`
-      : "TikTok Shop API is responding.",
-  };
+    return {
+      ok: true,
+      mode: "live",
+      shopName: shop?.shopName,
+      shopCipher: withShop.shopCipher,
+      message: shop
+        ? `Connected to ${shop.shopName}. TikTok Shop API is responding.`
+        : "TikTok Shop API is responding.",
+    };
+  } catch (error) {
+    const message =
+      error instanceof TikTokShopApiError
+        ? error.message
+        : error instanceof Error
+          ? error.message
+          : "TikTok Shop API connection test failed.";
+
+    return {
+      ok: false,
+      mode: "live",
+      message,
+    };
+  }
 }

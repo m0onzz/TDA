@@ -30,6 +30,84 @@ export function getTikTokServerEnvStatus(): TikTokServerEnvStatus {
   };
 }
 
+/** Access tokens often start with TTP_ / ROW_ — not valid as App Key. */
+export function looksLikeTikTokAccessToken(value: string): boolean {
+  const trimmed = value.trim();
+  return (
+    trimmed.startsWith("TTP_") ||
+    trimmed.startsWith("ROW_") ||
+    trimmed.startsWith("eyJ") ||
+    trimmed.length > 80
+  );
+}
+
+export function validateTikTokAppKey(
+  appKey: string
+): { ok: true } | { ok: false; message: string } {
+  const trimmed = appKey.trim();
+
+  if (!trimmed) {
+    return { ok: false, message: "App Key is required." };
+  }
+
+  if (looksLikeTikTokAccessToken(trimmed)) {
+    return {
+      ok: false,
+      message:
+        "That value looks like an access token, not an App Key. In Partner Center open your app → Credentials and copy the field labeled App key (a short alphanumeric id).",
+    };
+  }
+
+  if (!/^[a-zA-Z0-9_-]{6,64}$/.test(trimmed)) {
+    return {
+      ok: false,
+      message:
+        "App Key format looks wrong. Copy the App key from TikTok Shop Partner Center → your app → Credentials (usually a short alphanumeric string).",
+    };
+  }
+
+  return { ok: true };
+}
+
+export function validateTikTokAppSecret(
+  appSecret: string
+): { ok: true } | { ok: false; message: string } {
+  const trimmed = appSecret.trim();
+
+  if (!trimmed) {
+    return { ok: false, message: "App Secret is required." };
+  }
+
+  if (looksLikeTikTokAccessToken(trimmed)) {
+    return {
+      ok: false,
+      message:
+        "That value looks like an access token, not an App Secret. Copy App secret from Partner Center → your app → Credentials.",
+    };
+  }
+
+  return { ok: true };
+}
+
+export function formatTikTokAppKeyApiError(message: string): string {
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes("invalid") && normalized.includes("app_key")) {
+    return (
+      "TikTok rejected the App Key. Open Partner Center → your seller app → Credentials and copy App key and App secret exactly (not the shop access token). " +
+      "If you set TIKTOK_APP_KEY on the server, make sure it matches the same app that issued your access token. Then remove and re-save credentials in Settings."
+    );
+  }
+
+  if (normalized.includes("signature is invalid") || normalized.includes("106001")) {
+    return (
+      "TikTok rejected the request signature. Usually App Key and App Secret do not match each other or the access token was issued by a different app. Re-copy all three from Partner Center and save again."
+    );
+  }
+
+  return message;
+}
+
 const tikTokShopFieldsSchema = z.object({
   accessToken: z
     .string()
@@ -101,6 +179,23 @@ export function validateTikTokShopCredentialFields(
       message:
         "App Secret is required. Paste it below, or set TIKTOK_APP_SECRET on the server (App Key is already configured there).",
     };
+  }
+
+  const appKeyToValidate = data.appKey ?? process.env.TIKTOK_APP_KEY?.trim();
+  if (appKeyToValidate) {
+    const appKeyCheck = validateTikTokAppKey(appKeyToValidate);
+    if (!appKeyCheck.ok) {
+      return appKeyCheck;
+    }
+  }
+
+  const appSecretToValidate =
+    data.appSecret ?? process.env.TIKTOK_APP_SECRET?.trim();
+  if (appSecretToValidate) {
+    const appSecretCheck = validateTikTokAppSecret(appSecretToValidate);
+    if (!appSecretCheck.ok) {
+      return appSecretCheck;
+    }
   }
 
   return { ok: true, data };
