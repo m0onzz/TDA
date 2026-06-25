@@ -104,7 +104,7 @@ export function DiscordWebhookSettings() {
           <Bell className="h-5 w-5" aria-hidden />
         </div>
         <div>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
             Notifications
           </p>
           <h2 className="mt-1 text-lg font-bold">Discord order alerts</h2>
@@ -162,7 +162,7 @@ export function DiscordWebhookSettings() {
 
           <form onSubmit={handleSave} className="space-y-3">
             <label className="block space-y-2 text-sm">
-              <span className="text-xs uppercase tracking-widest text-muted-foreground">
+              <span className="text-xs uppercase tracking-wide text-muted-foreground">
                 Replace webhook URL
               </span>
               <input
@@ -193,7 +193,7 @@ export function DiscordWebhookSettings() {
       ) : (
         <form onSubmit={handleSave} className="space-y-4 border-t border-border pt-5">
           <label className="block space-y-2 text-sm">
-            <span className="text-xs uppercase tracking-widest text-muted-foreground">
+            <span className="text-xs uppercase tracking-wide text-muted-foreground">
               Discord webhook URL
             </span>
             <input

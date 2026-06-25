@@ -31,7 +31,10 @@ export default async function OrdersPage() {
 
   return (
     <>
-      <AdminHeader title="Orders" />
+      <AdminHeader
+        title="Orders"
+        description="Monitor fulfillment status, tracking, and TikTok shipping deadlines."
+      />
       <div className="page-content">
         <div className="panel overflow-hidden">
           <div className="table-header grid-cols-5">
@@ -46,9 +49,9 @@ export default async function OrdersPage() {
             <div className="empty-state border-0 rounded-none">
               <p>No orders yet.</p>
               <p className="mt-2 text-sm">
-                Publish listings from the{" "}
+                List products from{" "}
                 <Link href="/publish" className="underline underline-offset-2">
-                  Publish center
+                  Listings
                 </Link>
                 . When TikTok sends order webhooks to your app, they will appear
                 here.
@@ -59,7 +62,7 @@ export default async function OrdersPage() {
               {orders.map((order) => (
                 <li
                   key={order.id}
-                  className="grid grid-cols-1 gap-2 px-4 py-4 text-sm sm:grid-cols-5 sm:items-center sm:gap-4"
+                  className="grid grid-cols-1 gap-2 px-6 py-4 text-sm sm:grid-cols-5 sm:items-center sm:gap-4"
                 >
                   <span className="font-mono text-xs">{order.tiktokOrderId}</span>
                   <span>{order.productTitle ?? "—"}</span>

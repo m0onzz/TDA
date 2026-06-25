@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
-  DollarSign,
   Flame,
   Loader2,
   PackagePlus,
@@ -14,8 +13,6 @@ import {
   Truck,
   X,
 } from "lucide-react";
-import { PricingSummary } from "@/components/products/pricing-summary";
-import { calculatePlatformFeeBreakdown } from "@/lib/pricing/listing-pricing";
 import { getProductImageUrl } from "@/lib/products/product-image-url";
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { useFeedback } from "@/components/providers/feedback-provider";
@@ -27,14 +24,12 @@ import type {
 import { cn } from "@/lib/utils";
 
 const MAX_COST_OPTIONS = [10, 15, 25, 40] as const;
-const MARKUP_OPTIONS = [30, 40, 50, 60, 75] as const;
 const CATALOG_REFRESH_MS = 5 * 60 * 1000;
 const SEARCH_DEBOUNCE_MS = 350;
 
 const SORT_LABELS: Record<DiscoverSort, string> = {
   trending: "trending",
   cheapest: "cheapest",
-  margin: "best margin",
 };
 
 export function ProductFinder() {
@@ -42,7 +37,6 @@ export function ProductFinder() {
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [maxCost, setMaxCost] = useState<number>(25);
-  const [markupPercent, setMarkupPercent] = useState<number>(40);
   const [sort, setSort] = useState<DiscoverSort>("trending");
   const [result, setResult] = useState<ProductDiscoveryResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,17 +58,11 @@ export function ProductFinder() {
 
   const loadImportedProducts = useCallback(async () => {
     try {
-      const response = await fetch("/api/products");
+      const response = await fetch("/api/products?summary=imported-urls");
       const json = await response.json();
 
-      if (response.ok && json.data?.products) {
-        const urls = new Set<string>(
-          json.data.products.map(
-            (product: { originalSupplierUrl: string }) =>
-              product.originalSupplierUrl
-          )
-        );
-        setImportedUrls(urls);
+      if (response.ok && json.data?.urls) {
+        setImportedUrls(new Set<string>(json.data.urls));
       }
     } catch {
       // Non-blocking
@@ -100,7 +88,6 @@ export function ProductFinder() {
       const params = new URLSearchParams({
         maxCost: String(maxCost),
         sort,
-        markupPercent: String(markupPercent),
       });
 
       if (debouncedQuery) {
@@ -149,7 +136,7 @@ export function ProductFinder() {
         }
       }
     },
-    [debouncedQuery, maxCost, markupPercent, sort]
+    [debouncedQuery, maxCost, sort]
   );
 
   useEffect(() => {
@@ -176,114 +163,92 @@ export function ProductFinder() {
 
   const isSearchPending = query.trim() !== debouncedQuery;
 
-  async function handleImport(product: DiscoveredProduct) {
-    setImportingId(product.id);
-    setError(null);
+  const handleImport = useCallback(
+    async (product: DiscoveredProduct) => {
+      setImportingId(product.id);
+      setError(null);
 
-    try {
-      const response = await fetch("/api/products/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(product.importPayload),
-      });
+      try {
+        const response = await fetch("/api/products/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(product.importPayload),
+        });
 
-      const json = await response.json();
+        const json = await response.json();
 
-      if (!response.ok) {
-        throw new Error(json.error?.message ?? "Import failed");
+        if (!response.ok) {
+          throw new Error(json.error?.message ?? "Import failed");
+        }
+
+        setImportedUrls((prev) => new Set(prev).add(product.originalSupplierUrl));
+        feedback("success", "success");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to import product");
+        feedback("error", "error");
+      } finally {
+        setImportingId(null);
       }
-
-      setImportedUrls((prev) => new Set(prev).add(product.originalSupplierUrl));
-      feedback("success", "success");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to import product");
-      feedback("error", "error");
-    } finally {
-      setImportingId(null);
-    }
-  }
+    },
+    [feedback]
+  );
 
   return (
     <div className="page-content">
       <div className="panel-padded">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="grid flex-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <label className="space-y-1.5 text-sm sm:col-span-2 lg:col-span-1">
-            <span className="text-xs uppercase tracking-wide text-muted-foreground">
-              Search
-            </span>
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="blender, slides, pet..."
-                className="input-field pl-9 pr-9"
-              />
-              {isSearchPending ? (
-                <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
-              ) : query ? (
-                <button
-                  type="button"
-                  onClick={() => setQuery("")}
-                  aria-label="Clear search"
-                  className="absolute right-2 top-2 rounded p-0.5 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              ) : null}
-            </div>
-          </label>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="grid flex-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:items-end">
+            <label className="space-y-1.5 text-sm sm:col-span-2 lg:col-span-1">
+              <span className="filter-label">Search</span>
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="blender, slides, pet..."
+                  className="input-field pl-9 pr-9"
+                />
+                {isSearchPending ? (
+                  <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
+                ) : query ? (
+                  <button
+                    type="button"
+                    onClick={() => setQuery("")}
+                    aria-label="Clear search"
+                    className="absolute right-2 top-2 rounded p-0.5 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                ) : null}
+              </div>
+            </label>
 
-          <label className="space-y-1.5 text-sm">
-            <span className="text-xs uppercase tracking-wide text-muted-foreground">
-              Max cost
-            </span>
-            <select
-              value={maxCost}
-              onChange={(e) => setMaxCost(Number(e.target.value))}
-              className="input-field"
-            >
-              {MAX_COST_OPTIONS.map((value) => (
-                <option key={value} value={value}>
-                  ${value}
-                </option>
-              ))}
-            </select>
-          </label>
+            <label className="space-y-1.5 text-sm">
+              <span className="filter-label">Max cost</span>
+              <select
+                value={maxCost}
+                onChange={(e) => setMaxCost(Number(e.target.value))}
+                className="input-field"
+              >
+                {MAX_COST_OPTIONS.map((value) => (
+                  <option key={value} value={value}>
+                    ${value}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          <label className="space-y-1.5 text-sm">
-            <span className="flex items-center gap-1 text-xs uppercase tracking-wide text-muted-foreground">
-              <DollarSign className="h-3.5 w-3.5" />
-              Markup %
-            </span>
-            <select
-              value={markupPercent}
-              onChange={(e) => setMarkupPercent(Number(e.target.value))}
-              className="input-field"
-            >
-              {MARKUP_OPTIONS.map((value) => (
-                <option key={value} value={value}>
-                  {value}%
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="space-y-1.5 text-sm">
-            <span className="text-xs uppercase tracking-wide text-muted-foreground">
-              Sort by
-            </span>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as DiscoverSort)}
-              className="input-field"
-            >
-              <option value="trending">Trending</option>
-              <option value="cheapest">Cheapest</option>
-              <option value="margin">Best margin</option>
-            </select>
-          </label>
+            <label className="space-y-1.5 text-sm">
+              <span className="filter-label">Sort by</span>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as DiscoverSort)}
+                className="input-field"
+              >
+                <option value="trending">Trending</option>
+                <option value="cheapest">Cheapest</option>
+              </select>
+            </label>
           </div>
           <button
             type="button"
@@ -312,8 +277,6 @@ export function ProductFinder() {
             ) : null}
             {" · "}
             max ${maxCost}
-            {" · "}
-            {markupPercent}% markup
             {" · "}
             sorted by {SORT_LABELS[sort]}
             {refreshing || isSearchPending ? " · updating…" : null}
@@ -355,7 +318,7 @@ export function ProductFinder() {
               product={product}
               isImporting={importingId === product.id}
               isImported={importedUrls.has(product.originalSupplierUrl)}
-              onImport={() => void handleImport(product)}
+              onImport={handleImport}
             />
           ))}
         </div>
@@ -368,20 +331,22 @@ interface ProductCardProps {
   product: DiscoveredProduct;
   isImporting: boolean;
   isImported: boolean;
-  onImport: () => void;
+  onImport: (product: DiscoveredProduct) => void;
 }
 
-function ProductCard({
+const ProductCard = memo(function ProductCard({
   product,
   isImporting,
   isImported,
   onImport,
 }: ProductCardProps) {
-  const platformFees = calculatePlatformFeeBreakdown(product.pricing);
-  const imageUrls =
-    product.imageUrls.length > 0
-      ? product.imageUrls
-      : [getProductImageUrl(product.id, 0)];
+  const imageUrls = useMemo(
+    () =>
+      product.imageUrls.length > 0
+        ? product.imageUrls
+        : [getProductImageUrl(product.id, 0)],
+    [product.id, product.imageUrls]
+  );
   const [activeIndex, setActiveIndex] = useState(0);
   const activeImage = imageUrls[activeIndex] ?? imageUrls[0];
   const hasGallery = imageUrls.length > 1;
@@ -389,6 +354,10 @@ function ProductCard({
   useEffect(() => {
     setActiveIndex(0);
   }, [product.id]);
+
+  const handleImportClick = useCallback(() => {
+    onImport(product);
+  }, [onImport, product]);
 
   function showPreviousImage() {
     setActiveIndex((index) =>
@@ -472,9 +441,14 @@ function ProductCard({
           {product.description}
         </p>
 
-        <div className="mt-3">
-          <PricingSummary pricing={product.pricing} compact />
-        </div>
+        <p className="mt-3 text-sm">
+          <span className="text-xs uppercase tracking-wide text-muted-foreground">
+            Supplier cost
+          </span>
+          <span className="mt-1 block text-lg font-semibold tabular-nums">
+            ${product.costPrice.toFixed(2)}
+          </span>
+        </p>
 
         <div className="mt-3 space-y-1 text-xs text-muted-foreground">
           <p>
@@ -487,19 +461,13 @@ function ProductCard({
           </p>
         </div>
 
-        <div className="mt-4 flex items-center justify-between gap-2 border-t border-border pt-4">
-          <span className="text-xs leading-relaxed">
-            <span className="text-foreground">
-              +${platformFees.netProfitPerUnit.toFixed(2)} net / sale
-            </span>
-            <span className="text-muted-foreground">
-              {" "}
-              (−${platformFees.platformFeeAmount.toFixed(2)} TikTok fees)
-            </span>
+        <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-4">
+          <span className="min-w-0 flex-1 text-left text-xs leading-relaxed text-muted-foreground">
+            Set markup and profit in Price Optimizer after import.
           </span>
           <button
             type="button"
-            onClick={onImport}
+            onClick={handleImportClick}
             disabled={isImporting}
             className={cn(
               isImported ? "btn-secondary text-sm" : "btn-primary text-sm"
@@ -516,4 +484,4 @@ function ProductCard({
       </div>
     </article>
   );
-}
+});

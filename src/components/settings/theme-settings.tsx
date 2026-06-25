@@ -22,7 +22,7 @@ export function ThemeSettings() {
   return (
     <div className="panel-padded space-y-6">
       <div>
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">
           Experience
         </p>
         <h2 className="mt-1 text-lg font-bold">Theme</h2>

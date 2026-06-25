@@ -38,7 +38,7 @@ function svgPlaceholder(productId: string): Response {
   const label = productId.replace(/-/g, " ").slice(0, 24);
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
   <rect width="800" height="800" fill="#f4f4f5"/>
-  <text x="400" y="400" text-anchor="middle" font-family="system-ui,sans-serif" font-size="28" fill="#71717a">${label}</text>
+  <text x="400" y="400" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="28" fill="#71717a">${label}</text>
 </svg>`;
 
   return new Response(svg, {
@@ -58,8 +58,12 @@ export async function GET(
   const index = Math.max(0, Number(searchParams.get("index") ?? "0") || 0);
 
   const curated = getCuratedProductImages(productId);
-  const candidates = [curated[index], curated[0]].filter(
-    (url): url is string => Boolean(url) && isVendorImageUrl(url)
+  const candidates = Array.from(
+    new Set(
+      [curated[index], curated[0]].filter(
+        (url): url is string => Boolean(url) && isVendorImageUrl(url)
+      )
+    )
   );
 
   for (const url of candidates) {

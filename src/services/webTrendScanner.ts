@@ -1,3 +1,4 @@
+import { getCatalogRefreshState } from "@/lib/catalog/rotation";
 import { getCuratedTikTokTrendKeywords } from "@/services/tiktokShopTrends";
 
 const REDDIT_TREND_SUBREDDITS = [
@@ -103,6 +104,10 @@ async function fetchSubredditTrends(
   }
 }
 
+let webTrendCache:
+  | { windowId: number; keywords: string[]; sources: string[] }
+  | null = null;
+
 /**
  * Scans public web trend signals (Reddit hot posts) for product keywords.
  * Falls back to curated TikTok bestseller terms if the network scan fails.
@@ -111,6 +116,11 @@ export async function fetchWebTrendKeywords(): Promise<{
   keywords: string[];
   sources: string[];
 }> {
+  const { windowId } = getCatalogRefreshState();
+  if (webTrendCache?.windowId === windowId) {
+    return webTrendCache;
+  }
+
   const scans = await Promise.all(
     REDDIT_TREND_SUBREDDITS.map(async (subreddit) => {
       const phrases = await fetchSubredditTrends(subreddit);
@@ -131,10 +141,12 @@ export async function fetchWebTrendKeywords(): Promise<{
   }
 
   if (keywordScores.size === 0) {
-    return {
+    webTrendCache = {
+      windowId,
       keywords: [...FALLBACK_TREND_KEYWORDS],
       sources: ["curated/tiktok-bestsellers"],
     };
+    return webTrendCache;
   }
 
   const keywords = Array.from(keywordScores.entries())
@@ -142,7 +154,8 @@ export async function fetchWebTrendKeywords(): Promise<{
     .slice(0, 30)
     .map(([phrase]) => phrase);
 
-  return { keywords, sources };
+  webTrendCache = { windowId, keywords, sources };
+  return webTrendCache;
 }
 
 export function scoreWebTrendMatch(

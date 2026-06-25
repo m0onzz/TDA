@@ -368,8 +368,15 @@ export async function fetchTrendingProducts(
   };
 }
 
+let cachedAllTrendingProducts: SupplierRawProduct[] | null = null;
+let cachedUSCompliantPipeline: ProductPipelineInsert[] | null = null;
+
 /** Aggregate trending SKUs across every simulated supplier platform. */
 export async function fetchAllTrendingProducts(): Promise<SupplierRawProduct[]> {
+  if (cachedAllTrendingProducts) {
+    return cachedAllTrendingProducts;
+  }
+
   const platforms: SupplierPlatform[] = [
     "zendrop",
     "autods",
@@ -391,7 +398,21 @@ export async function fetchAllTrendingProducts(): Promise<SupplierRawProduct[]> 
     }
   }
 
+  cachedAllTrendingProducts = merged;
   return merged;
+}
+
+/** US-compliant pipeline rows from the simulated catalog (cached after first build). */
+export async function fetchUSCompliantPipelineProducts(): Promise<
+  ProductPipelineInsert[]
+> {
+  if (cachedUSCompliantPipeline) {
+    return cachedUSCompliantPipeline;
+  }
+
+  const catalog = await fetchAllTrendingProducts();
+  cachedUSCompliantPipeline = filterForUSInventory(catalog).accepted;
+  return cachedUSCompliantPipeline;
 }
 
 /**

@@ -7,8 +7,8 @@ import {
   scoreTikTokTrendMatch,
 } from "@/services/tiktokShopTrends";
 import {
-  filterForUSInventory,
   fetchAllTrendingProducts,
+  fetchUSCompliantPipelineProducts,
   type ProductPipelineInsert,
   type SupplierShippingInfo,
 } from "@/services/supplierSourcing";
@@ -34,7 +34,8 @@ import type {
 } from "@/types/product-discovery";
 
 const DEFAULT_MAX_COST = 25;
-const DEFAULT_MARKUP_PERCENT = 40;
+
+const IMPORT_PLACEHOLDER_MARKUP_PERCENT = 0;
 
 function buildShippingLabel(shipping: SupplierShippingInfo): string {
   if (shipping.warehouse === "US_Domestic") {
@@ -92,10 +93,6 @@ function sortProducts(
   switch (sort) {
     case "cheapest":
       return copy.sort((a, b) => a.costPrice - b.costPrice);
-    case "margin":
-      return copy.sort(
-        (a, b) => b.estimatedMarginPercent - a.estimatedMarginPercent
-      );
     case "trending":
     default:
       return copy.sort((a, b) => b.combinedScore - a.combinedScore);
@@ -104,7 +101,6 @@ function sortProducts(
 
 function toDiscoveredProduct(
   pipeline: ProductPipelineInsert,
-  markupPercent: number,
   webTrendBoost: number,
   webTrendMatch: string | null,
   tiktokTrend: {
@@ -117,7 +113,11 @@ function toDiscoveredProduct(
   rotationTrendingBoost: number,
   isNewPick: boolean
 ): DiscoveredProduct {
-  const pricing = calculateListingPricing(pipeline.cost_price, markupPercent);
+  const costPrice = pipeline.cost_price;
+  const pricing = calculateListingPricing(
+    costPrice,
+    IMPORT_PLACEHOLDER_MARKUP_PERCENT
+  );
   const vendor = pipeline.raw_data.vendor;
 
   const vendorInfo: DiscoveredVendorInfo = {
@@ -204,8 +204,8 @@ function toDiscoveredProduct(
     importPayload: {
       originalSupplierUrl: pipeline.original_supplier_url,
       rawData: enrichedRawData as unknown as Record<string, unknown>,
-      costPrice: pricing.costPrice,
-      sellingPrice: pricing.sellingPrice,
+      costPrice,
+      sellingPrice: costPrice,
     },
   };
 }
@@ -221,7 +221,6 @@ export async function discoverProducts(
   filters: DiscoverProductsFilters = {}
 ): Promise<ProductDiscoveryResult> {
   const maxCost = filters.maxCost ?? DEFAULT_MAX_COST;
-  const markupPercent = filters.markupPercent ?? DEFAULT_MARKUP_PERCENT;
   const sort = filters.sort ?? "trending";
 
   const refreshState = getCatalogRefreshState();
@@ -230,17 +229,17 @@ export async function discoverProducts(
     { keywords, sources: webSources },
     tiktokTrends,
     supplierCatalog,
+    accepted,
   ] = await Promise.all([
     fetchWebTrendKeywords(),
     fetchTikTokShopTrends(),
     fetchAllTrendingProducts(),
+    fetchUSCompliantPipelineProducts(),
   ]);
 
   const mergedWebKeywords = Array.from(
     new Set([...keywords, ...tiktokTrends.trendingKeywords.slice(0, 12)])
   );
-
-  const { accepted } = filterForUSInventory(supplierCatalog);
 
   const affordable = accepted.filter(
     (product) => product.cost_price <= maxCost
@@ -279,7 +278,6 @@ export async function discoverProducts(
       );
       return toDiscoveredProduct(
         product,
-        markupPercent,
         boost,
         match,
         tiktokTrend,
@@ -317,7 +315,6 @@ export async function discoverProducts(
         "suppliers/autods",
         "suppliers/cj_dropshipping",
       ],
-      defaultMarkupPercent: markupPercent,
     },
   };
 }

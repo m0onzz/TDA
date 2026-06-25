@@ -4,9 +4,12 @@ import { ThemeInitScript } from "@/components/theme/theme-init-script";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TDA",
+  title: {
+    default: "TDA — TikTok Dropship Automator",
+    template: "%s · TDA",
+  },
   description:
-    "TDA — TikTok dropshipping automation. Product discovery, price optimization, TikTok Shop publishing, and 48-hour fulfillment.",
+    "Automate TikTok Shop dropshipping — product discovery, AI pricing, listing, US-warehouse fulfillment, and Discord order alerts.",
 };
 
 export default function RootLayout({
@@ -15,11 +18,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="scroll-smooth" data-theme="dark" suppressHydrationWarning>
+    <html
+      lang="en"
+      className="scroll-smooth font-sans"
+      style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+      data-theme="dark"
+      suppressHydrationWarning
+    >
       <head>
         <ThemeInitScript />
       </head>
-      <body className="antialiased">
+      <body
+        className="font-sans antialiased"
+        style={{ fontFamily: "Arial, Helvetica, sans-serif" }}
+      >
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

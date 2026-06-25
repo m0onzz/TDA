@@ -124,12 +124,12 @@ export function CredentialManager() {
   return (
     <div className="space-y-6">
       <div className="panel-padded text-sm text-muted-foreground">
-        <p className="text-xs uppercase tracking-widest text-foreground">
+        <p className="text-xs uppercase tracking-wide text-foreground">
           TikTok Shop credentials
         </p>
         <p className="mt-2">
-          Add your TikTok Shop access token to publish listings live. Without
-          credentials, publish runs in simulation mode so you can test the full
+          Add your TikTok Shop access token to list products live. Without
+          credentials, listing runs in simulation mode so you can test the full
           workflow locally.
         </p>
       </div>

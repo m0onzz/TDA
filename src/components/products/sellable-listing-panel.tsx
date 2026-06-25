@@ -34,6 +34,14 @@ function getImages(product: SellableProduct): string[] {
   return [];
 }
 
+function getFallbackImages(product: SellableProduct): string[] {
+  if ("fallbackImages" in product && product.fallbackImages.length > 0) {
+    return product.fallbackImages;
+  }
+
+  return [];
+}
+
 function getVendor(product: SellableProduct) {
   if ("vendor" in product && product.vendor) {
     return product.vendor;
@@ -59,6 +67,7 @@ export function SellableListingPanel({
   const vendor = getVendor(product);
   const pricing = getPricing(product);
   const images = getImages(product);
+  const fallbackImages = getFallbackImages(product);
   const title = isCatalogProduct(product)
     ? product.aiTitle ?? product.title
     : product.title;
@@ -80,7 +89,11 @@ export function SellableListingPanel({
     <article className={cn("panel overflow-hidden", className)}>
       <div className="grid gap-0 lg:grid-cols-2">
         <div className="p-4">
-          <ProductImageGallery images={images} alt={title} />
+          <ProductImageGallery
+            images={images}
+            fallbackImages={fallbackImages}
+            alt={title}
+          />
         </div>
 
         <div className="flex flex-col gap-4 border-t border-border p-4 lg:border-l lg:border-t-0">

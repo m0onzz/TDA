@@ -1,5 +1,7 @@
 import type { Config } from "tailwindcss";
 
+const ARIAL_STACK = ["Arial", "Helvetica", "sans-serif"];
+
 const config: Config = {
   darkMode: ["class"],
   content: [
@@ -8,11 +10,12 @@ const config: Config = {
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
+    fontFamily: {
+      sans: ARIAL_STACK,
+      serif: ARIAL_STACK,
+      mono: ARIAL_STACK,
+    },
     extend: {
-      fontFamily: {
-        sans: ['"Times New Roman"', "Times", "serif"],
-        mono: ['"Times New Roman"', "Times", "serif"],
-      },
       colors: {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",

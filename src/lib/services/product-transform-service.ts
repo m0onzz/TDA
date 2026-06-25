@@ -1,4 +1,8 @@
 import { buildDefaultTikTokMarketing, buildListingTags, normalizeListingDescription, normalizeListingTitle } from "@/lib/listing/listing-copy";
+import {
+  calculateListingPricing,
+  type ListingPricing,
+} from "@/lib/pricing/listing-pricing";
 import { calculateOptimalListingPricing } from "@/lib/pricing/optimal-pricing";
 import {
   getUserProductsByIds,
@@ -8,9 +12,35 @@ import {
 } from "@/lib/services/product-service";
 import type { OptimizedImage, TransformProductResult } from "@/types/products";
 
+export type TransformMode = "optimal" | "markup";
+
+export interface TransformOptions {
+  mode?: TransformMode;
+  markupPercent?: number;
+}
+
+function resolvePricing(
+  costPrice: number,
+  currency: string,
+  options: TransformOptions
+): ListingPricing {
+  const mode = options.mode ?? "optimal";
+
+  if (mode === "markup") {
+    if (options.markupPercent === undefined) {
+      throw new Error("Markup percent is required for markup pricing");
+    }
+
+    return calculateListingPricing(costPrice, options.markupPercent, currency);
+  }
+
+  return calculateOptimalListingPricing(costPrice, currency);
+}
+
 export async function transformProductsForListing(
   userId: string,
-  productIds: string[]
+  productIds: string[],
+  options: TransformOptions = {}
 ): Promise<TransformProductResult[]> {
   const products = await getUserProductsByIds(userId, productIds);
   const results: TransformProductResult[] = [];
@@ -35,9 +65,10 @@ export async function transformProductsForListing(
         throw new Error("Product is missing a valid supplier cost price");
       }
 
-      const pricing = calculateOptimalListingPricing(
+      const pricing = resolvePricing(
         costPrice,
-        product.pricing.currency
+        product.pricing.currency,
+        options
       );
 
       const title = normalizeListingTitle(product.title);

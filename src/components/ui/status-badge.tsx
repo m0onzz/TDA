@@ -19,7 +19,7 @@ const STATUS_STYLES: Record<ProductStatus, string> = {
     "border-2 border-foreground bg-muted text-foreground [background-image:repeating-linear-gradient(-45deg,transparent,transparent_3px,hsl(0_0%_25%)_3px,hsl(0_0%_25%)_6px)]",
   ready_for_review: "border border-foreground bg-foreground text-background",
   published:
-    "border-2 border-foreground bg-background text-foreground uppercase tracking-wider",
+    "border-2 border-foreground bg-background text-foreground uppercase tracking-wide",
   failed: "border-2 border-double border-foreground bg-muted text-foreground",
   archived: "border border-border bg-muted/50 text-muted-foreground opacity-60",
 };
@@ -33,7 +33,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
   return (
     <span
       className={cn(
-        "shrink-0 rounded-full px-2.5 py-0.5 text-xs",
+        "inline-flex shrink-0 items-center justify-center rounded-full px-2.5 py-0.5 text-center text-xs leading-none",
         STATUS_STYLES[status],
         className
       )}
@@ -46,7 +46,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
 export type ListingBadgeVariant = "live" | "ready" | "pending";
 
 const LISTING_BADGE_STYLES: Record<ListingBadgeVariant, string> = {
-  live: "border-2 border-foreground bg-background uppercase tracking-wider",
+  live: "border-2 border-foreground bg-background uppercase tracking-wide",
   ready: "border border-foreground bg-foreground text-background",
   pending: "border border-dashed border-muted-foreground/50 bg-muted text-muted-foreground",
 };
@@ -66,7 +66,7 @@ export function ListingBadge({ variant, className }: ListingBadgeProps) {
   return (
     <span
       className={cn(
-        "rounded-full px-2.5 py-0.5 text-xs",
+        "inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-center text-xs leading-none",
         LISTING_BADGE_STYLES[variant],
         className
       )}

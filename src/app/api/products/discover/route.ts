@@ -10,8 +10,7 @@ const discoverQuerySchema = z.object({
   query: z.string().optional(),
   maxCost: z.coerce.number().positive().max(500).optional(),
   category: z.string().optional(),
-  sort: z.enum(["trending", "cheapest", "margin"]).optional(),
-  markupPercent: z.coerce.number().min(10).max(200).optional(),
+  sort: z.enum(["trending", "cheapest"]).optional(),
 });
 
 export async function GET(request: Request) {
@@ -29,7 +28,6 @@ export async function GET(request: Request) {
       maxCost: searchParams.get("maxCost") ?? undefined,
       category: searchParams.get("category") ?? undefined,
       sort: searchParams.get("sort") ?? undefined,
-      markupPercent: searchParams.get("markupPercent") ?? undefined,
     });
 
     if (!parsed.success) {

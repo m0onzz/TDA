@@ -26,6 +26,8 @@ export function MotionLink({
     onClick?.(event);
   }
 
+  const isFullWidth = className?.includes("w-full");
+
   if (settings.reducedMotion) {
     return (
       <Link className={className} onClick={handleClick} {...props}>
@@ -36,12 +38,16 @@ export function MotionLink({
 
   return (
     <motion.div
-      className="inline-flex"
+      className={cn(isFullWidth ? "flex w-full" : "inline-flex")}
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       transition={{ type: "spring", stiffness: 420, damping: 28 }}
     >
-      <Link className={cn(className)} onClick={handleClick} {...props}>
+      <Link
+        className={cn(className, isFullWidth && "flex w-full")}
+        onClick={handleClick}
+        {...props}
+      >
         {children}
       </Link>
     </motion.div>

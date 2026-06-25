@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, Sparkles, X } from "lucide-react";
 import { useFeedback } from "@/components/providers/feedback-provider";
 import { MotionLink } from "@/components/motion/motion-link";
 
 const navLinks = [
+  { href: "#platform", label: "Platform" },
   { href: "#features", label: "Features" },
   { href: "#how-it-works", label: "How it works" },
 ] as const;
@@ -31,9 +32,12 @@ export function PublicHeader() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <MotionLink
           href="/"
-          className="text-xl font-bold tracking-tight text-foreground"
+          className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-foreground"
           onClick={() => setMobileOpen(false)}
         >
+          <span className="flex h-8 w-8 items-center justify-center rounded-md border-2 border-foreground bg-foreground text-background">
+            <Sparkles className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
+          </span>
           TDA
         </MotionLink>
 

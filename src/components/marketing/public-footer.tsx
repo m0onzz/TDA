@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 const footerLinks = [
+  { href: "#platform", label: "Platform" },
   { href: "#features", label: "Features" },
   { href: "#how-it-works", label: "How it works" },
   { href: "/login", label: "Login" },
@@ -12,11 +13,11 @@ export function PublicFooter() {
     <footer className="border-t border-border bg-muted/40">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
-          <div>
+          <div className="max-w-sm">
             <p className="text-xl font-bold tracking-tight">TDA</p>
             <p className="mt-2 max-w-sm text-sm text-muted-foreground">
               TikTok Shop automation for dropshipping teams — product
-              discovery, pricing, publishing, and US-warehouse fulfillment in
+              discovery, pricing, listing, and US-warehouse fulfillment in
               one platform.
             </p>
           </div>

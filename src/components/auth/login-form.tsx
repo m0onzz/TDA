@@ -132,7 +132,7 @@ export function LoginForm() {
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
         <label className="block space-y-2 text-sm">
-          <span className="text-xs uppercase tracking-widest text-muted-foreground">
+          <span className="text-xs uppercase tracking-wide text-muted-foreground">
             Email
           </span>
           <input
@@ -148,7 +148,7 @@ export function LoginForm() {
         </label>
 
         <label className="block space-y-2 text-sm">
-          <span className="text-xs uppercase tracking-widest text-muted-foreground">
+          <span className="text-xs uppercase tracking-wide text-muted-foreground">
             Password
           </span>
           <input

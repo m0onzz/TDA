@@ -4,10 +4,11 @@ export default function AuthLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
-      <div className="w-full max-w-md">
+    <div className="relative flex min-h-screen items-center justify-center bg-background px-4 py-12">
+      <div className="hero-glow pointer-events-none absolute inset-0" aria-hidden="true" />
+      <div className="relative w-full max-w-md">
         <div className="mb-8 text-center">
-          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
             Admin Access
           </p>
         </div>

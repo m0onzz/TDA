@@ -1,4 +1,5 @@
 import { getCredentialSecretByLookupKey } from "@/lib/services/credential-service";
+import { syncTikTokShopImagesForProduct } from "@/lib/services/tiktok-image-sync-service";
 import { getUserProductsByIds } from "@/lib/services/product-service";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { getProductImageUrl } from "@/lib/products/product-image-url";
@@ -46,7 +47,7 @@ function toAbsoluteImageUrl(url: string, productKey: string): string {
 function validateProductForPublish(product: CatalogProduct): void {
   if (product.status !== "ready_for_review" && product.status !== "published") {
     throw new PublishValidationError(
-      `"${product.title}" must be optimized before publishing (status: ${product.status})`
+      `"${product.title}" must be optimized before listing (status: ${product.status})`
     );
   }
 
@@ -163,6 +164,17 @@ export async function publishProductsToTikTokShop(
 
       await markProductPublished(product.id, publishResult);
 
+      if (publishResult.mode === "live") {
+        try {
+          await syncTikTokShopImagesForProduct(userId, product.id);
+        } catch (syncError) {
+          console.warn(
+            "[publishProductsToTikTokShop] image sync after publish failed",
+            syncError
+          );
+        }
+      }
+
       results.push({
         productId: product.id,
         success: true,
@@ -172,7 +184,7 @@ export async function publishProductsToTikTokShop(
       });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Publish failed";
+        error instanceof Error ? error.message : "Listing failed";
       results.push({
         productId: product.id,
         success: false,

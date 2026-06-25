@@ -22,7 +22,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/product-finder", label: "Product Finder", icon: Search },
   { href: "/ai-transformer", label: "Price Optimizer", icon: TrendingUp },
-  { href: "/publish", label: "Publish", icon: Rocket },
+  { href: "/publish", label: "Listings", icon: Rocket },
   { href: "/orders", label: "Orders", icon: Package },
   { href: "/settings", label: "Settings", icon: Settings },
 ] as const;
@@ -101,7 +101,7 @@ export function Sidebar({ userEmail }: SidebarProps) {
                   <span className="absolute inset-0 rounded-md border-l-2 border-foreground bg-muted" />
                 ) : null}
                 <Icon className="relative z-10 h-4 w-4 shrink-0" strokeWidth={2} />
-                <span className="relative z-10">{label}</span>
+                <span className="relative z-10 leading-none">{label}</span>
               </Link>
             );
           })}

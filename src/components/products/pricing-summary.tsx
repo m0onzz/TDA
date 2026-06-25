@@ -23,15 +23,17 @@ export function PricingSummary({
   return (
     <div
       className={cn(
-        "rounded-md border border-border bg-muted/30",
+        "rounded-md border border-border bg-muted/30 text-left",
         compact ? "p-3" : "p-4",
         className
       )}
     >
       <div
         className={cn(
-          "grid gap-3",
-          compact ? "grid-cols-2" : "sm:grid-cols-3 lg:grid-cols-6"
+          "grid gap-x-3 gap-y-3",
+          compact
+            ? "grid-cols-2"
+            : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6"
         )}
       >
         <PricingCell label="Your cost" value={formatMoney(pricing.costPrice)} />
@@ -63,20 +65,20 @@ export function PricingSummary({
 
       <p
         className={cn(
-          "text-muted-foreground",
-          compact ? "mt-2 text-[11px] leading-relaxed" : "mt-3 text-xs"
+          "text-left text-muted-foreground",
+          compact ? "mt-2 text-[11px] leading-relaxed" : "mt-3 text-xs leading-relaxed"
         )}
       >
         {compact ? (
           <>
-            Gross {fees.grossMarginPercent.toFixed(0)}% margin before fees ·
-            net {fees.netMarginPercent.toFixed(1)}% after TikTok platform fees
+            Gross {fees.grossMarginPercent.toFixed(0)}% margin before fees · net{" "}
+            {fees.netMarginPercent.toFixed(1)}% after TikTok platform fees
           </>
         ) : (
           <>
-            Markup {pricing.markupPercent.toFixed(0)}% over supplier cost ·
-            gross margin {fees.grossMarginPercent.toFixed(1)}% · estimated TikTok
-            Shop + payment fees at ~{fees.platformFeePercent}% of sell price ·{" "}
+            Markup {pricing.markupPercent.toFixed(0)}% over supplier cost · gross
+            margin {fees.grossMarginPercent.toFixed(1)}% · estimated TikTok Shop +
+            payment fees at ~{fees.platformFeePercent}% of sell price ·{" "}
             {pricing.currency}
           </>
         )}
@@ -99,17 +101,17 @@ function PricingCell({
   muted?: boolean;
 }) {
   return (
-    <div>
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+    <div className="min-w-0 text-left">
+      <p className="text-xs uppercase leading-none tracking-wide text-muted-foreground">
         {label}
       </p>
       <p
         className={cn(
-          "mt-0.5",
-          highlight && "text-lg",
+          "mt-1 tabular-nums leading-none",
+          highlight && "text-base font-semibold sm:text-lg",
           muted && "text-muted-foreground",
           badge &&
-            "mt-1 inline-block rounded-full border border-foreground px-2 py-0.5 text-sm"
+            "inline-flex min-h-[1.5rem] items-center justify-center rounded-full border border-foreground px-2 py-0.5 text-sm"
         )}
       >
         {value}

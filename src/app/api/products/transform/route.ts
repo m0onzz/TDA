@@ -8,9 +8,19 @@ import { transformProductsForListing } from "@/lib/services/product-transform-se
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const transformBodySchema = z.object({
-  productIds: z.array(z.string().uuid()).min(1).max(10),
-});
+const transformBodySchema = z
+  .object({
+    productIds: z.array(z.string().uuid()).min(1).max(10),
+    mode: z.enum(["optimal", "markup"]).optional().default("optimal"),
+    markupPercent: z.number().min(10).max(200).optional(),
+  })
+  .refine(
+    (data) => data.mode !== "markup" || data.markupPercent !== undefined,
+    {
+      message: "markupPercent is required when mode is markup",
+      path: ["markupPercent"],
+    }
+  );
 
 export async function POST(request: Request) {
   try {
@@ -33,7 +43,11 @@ export async function POST(request: Request) {
 
     const results = await transformProductsForListing(
       user.id,
-      parsed.data.productIds
+      parsed.data.productIds,
+      {
+        mode: parsed.data.mode,
+        markupPercent: parsed.data.markupPercent,
+      }
     );
 
     const succeeded = results.filter((result) => result.success).length;

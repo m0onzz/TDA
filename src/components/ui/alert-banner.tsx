@@ -35,11 +35,11 @@ export function AlertBanner({
       role={role ?? (variant === "error" ? "alert" : "status")}
       className={cn(
         VARIANT_CLASSES[variant],
-        icon && "flex items-center gap-2",
+        icon && "flex items-start gap-2",
         className
       )}
     >
-      {icon}
+      {icon ? <span className="mt-0.5 shrink-0">{icon}</span> : null}
       {children}
     </div>
   );

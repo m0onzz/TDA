@@ -1,13 +1,12 @@
 import type { ListingPricing } from "@/lib/pricing/listing-pricing";
 
-export type DiscoverSort = "trending" | "cheapest" | "margin";
+export type DiscoverSort = "trending" | "cheapest";
 
 export interface DiscoverProductsFilters {
   query?: string;
   maxCost?: number;
   category?: string;
   sort?: DiscoverSort;
-  markupPercent?: number;
 }
 
 export interface DiscoveredVendorInfo {
@@ -70,7 +69,6 @@ export interface ProductDiscoveryResult {
     usCompliant: number;
     afterFilters: number;
     sources: string[];
-    defaultMarkupPercent: number;
   };
 }
 

@@ -1,4 +1,4 @@
-import type { ProductRawDataShape } from "@/types/products";
+import type { ProductRawDataShape, OptimizedImage } from "@/types/products";
 import type { VendorInfo } from "@/types/products";
 import {
   pricingFromStoredPrices,
@@ -65,10 +65,28 @@ export function parsePricingFromRaw(
 
 export function getCatalogImages(
   raw: ProductRawDataShape,
-  optimizedImages: Array<{ url: string }>
+  optimizedImages: Array<{ url: string; source?: OptimizedImage["source"] }>
 ): string[] {
-  if (optimizedImages.length > 0) {
-    return optimizedImages.map((image) => image.url);
+  if (raw.tiktok_shop_images && raw.tiktok_shop_images.length > 0) {
+    return raw.tiktok_shop_images;
+  }
+
+  const tiktokOptimized: string[] = [];
+  const allOptimized: string[] = [];
+
+  for (const image of optimizedImages) {
+    allOptimized.push(image.url);
+    if (image.source === "tiktok") {
+      tiktokOptimized.push(image.url);
+    }
+  }
+
+  if (tiktokOptimized.length > 0) {
+    return tiktokOptimized;
+  }
+
+  if (allOptimized.length > 0) {
+    return allOptimized;
   }
 
   if (raw.images && raw.images.length > 0) {
@@ -77,6 +95,37 @@ export function getCatalogImages(
 
   if (raw.vendor_listing_images && raw.vendor_listing_images.length > 0) {
     return raw.vendor_listing_images;
+  }
+
+  return [];
+}
+
+export function getCatalogFallbackImages(
+  raw: ProductRawDataShape,
+  optimizedImages: Array<{ url: string; source?: OptimizedImage["source"] }>,
+  currentDisplay: string[] = getCatalogImages(raw, optimizedImages)
+): string[] {
+  if (raw.fallback_images && raw.fallback_images.length > 0) {
+    return raw.fallback_images;
+  }
+
+  const supplierOptimized = optimizedImages
+    .filter((image) => image.source !== "tiktok")
+    .map((image) => image.url);
+  if (supplierOptimized.length > 0) {
+    return supplierOptimized;
+  }
+
+  if (raw.images && raw.images.length > 0) {
+    return raw.images;
+  }
+
+  if (raw.vendor_listing_images && raw.vendor_listing_images.length > 0) {
+    return raw.vendor_listing_images;
+  }
+
+  if (currentDisplay.length > 0) {
+    return currentDisplay;
   }
 
   return [];

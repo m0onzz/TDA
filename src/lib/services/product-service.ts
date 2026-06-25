@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import {
   getCatalogImages,
+  getCatalogFallbackImages,
   parsePricingFromRaw,
   parseVendorFromRaw,
 } from "@/lib/products/catalog-helpers";
@@ -68,6 +69,7 @@ export function mapRowToCatalogProduct(row: {
   const costPrice = Number(row.cost_price);
   const sellingPrice = Number(row.selling_price);
   const images = getCatalogImages(raw, optimizedImages);
+  const fallbackImages = getCatalogFallbackImages(raw, optimizedImages, images);
 
   return {
     id: row.id,
@@ -78,6 +80,7 @@ export function mapRowToCatalogProduct(row: {
     sellingPrice,
     imageUrl: images[0] ?? null,
     images,
+    fallbackImages,
     supplierName: raw.supplier_name ?? null,
     category: raw.category ?? null,
     aiTitle: row.ai_title,
@@ -94,6 +97,71 @@ export function mapRowToCatalogProduct(row: {
     tiktokListingUrl: row.tiktok_listing_url,
     publishedAt: row.published_at,
   };
+}
+
+export interface UserProductStats {
+  total: number;
+  draft: number;
+  readyForReview: number;
+  published: number;
+}
+
+export async function getUserProductStats(
+  userId: string
+): Promise<UserProductStats> {
+  const supabase = createServerSupabaseClient();
+
+  const { data, error } = await supabase
+    .from("products")
+    .select("status")
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(`Failed to load product stats: ${error.message}`);
+  }
+
+  const stats: UserProductStats = {
+    total: 0,
+    draft: 0,
+    readyForReview: 0,
+    published: 0,
+  };
+
+  for (const row of data ?? []) {
+    stats.total += 1;
+    switch (row.status) {
+      case "draft":
+        stats.draft += 1;
+        break;
+      case "ready_for_review":
+        stats.readyForReview += 1;
+        break;
+      case "published":
+        stats.published += 1;
+        break;
+      default:
+        break;
+    }
+  }
+
+  return stats;
+}
+
+export async function listImportedSupplierUrls(
+  userId: string
+): Promise<string[]> {
+  const supabase = createServerSupabaseClient();
+
+  const { data, error } = await supabase
+    .from("products")
+    .select("original_supplier_url")
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(`Failed to load imported URLs: ${error.message}`);
+  }
+
+  return (data ?? []).map((row) => row.original_supplier_url);
 }
 
 export async function listUserProducts(userId: string): Promise<CatalogProduct[]> {

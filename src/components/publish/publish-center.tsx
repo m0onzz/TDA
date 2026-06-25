@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   ExternalLink,
   Loader2,
+  RefreshCw,
   Rocket,
   XCircle,
 } from "lucide-react";
@@ -19,6 +20,7 @@ export function PublishCenter() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
+  const [syncingImages, setSyncingImages] = useState(false);
   const [unlistingId, setUnlistingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -84,7 +86,7 @@ export function PublishCenter() {
       const json = await response.json();
 
       if (!response.ok) {
-        throw new Error(json.error?.message ?? "Publish failed");
+        throw new Error(json.error?.message ?? "Listing failed");
       }
 
       const failed = (json.data?.results ?? []).filter(
@@ -96,7 +98,7 @@ export function PublishCenter() {
           .map((result: { error?: string }) => result.error)
           .filter(Boolean)
           .join(" · ");
-        setError(messages || "Some products failed to publish");
+        setError(messages || "Some products failed to list");
         feedback("error", "error");
       } else {
         const simulated = (json.data?.results ?? []).some(
@@ -104,8 +106,8 @@ export function PublishCenter() {
         );
         setSuccessMessage(
           simulated
-            ? `Simulated publish for ${json.data.summary.succeeded} product(s). Add TikTok credentials in Settings for live listings.`
-            : `Published ${json.data.summary.succeeded} product(s) to TikTok Shop.`
+            ? `Simulated listing for ${json.data.summary.succeeded} product(s). Add TikTok credentials in Settings for live listings.`
+            : `Listed ${json.data.summary.succeeded} product(s) on TikTok Shop.`
         );
         feedback("success", "success");
       }
@@ -113,7 +115,7 @@ export function PublishCenter() {
       setSelectedIds(new Set());
       await loadProducts();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Publish failed");
+      setError(err instanceof Error ? err.message : "Listing failed");
       feedback("error", "error");
     } finally {
       setPublishing(false);
@@ -166,6 +168,59 @@ export function PublishCenter() {
     }
   }
 
+  async function handleSyncImages() {
+    setSyncingImages(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const response = await fetch("/api/products/sync-tiktok-images", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      const json = await response.json();
+
+      if (!response.ok) {
+        throw new Error(json.error?.message ?? "Image sync failed");
+      }
+
+      const summary = json.data as {
+        succeeded: number;
+        failed: number;
+        total: number;
+        message?: string;
+        mode?: string;
+      };
+
+      if (summary.message && summary.total === 0) {
+        setError(summary.message);
+        feedback("error", "error");
+      } else if (summary.failed > 0) {
+        setError(
+          `Synced ${summary.succeeded} of ${summary.total} listing image(s). ${summary.failed} failed — check TikTok product IDs or seller SKUs.`
+        );
+        feedback("error", "error");
+      } else {
+        setSuccessMessage(
+          summary.mode === "simulation"
+            ? summary.message ??
+                "Image sync requires live TikTok Shop credentials."
+            : `Synced TikTok Shop images for ${summary.succeeded} product(s).`
+        );
+        feedback("success", "success");
+      }
+
+      await loadProducts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Image sync failed");
+      feedback("error", "error");
+    } finally {
+      setSyncingImages(false);
+    }
+  }
+
   return (
     <div className="page-content space-y-6">
       {error ? <AlertBanner variant="error">{error}</AlertBanner> : null}
@@ -175,9 +230,9 @@ export function PublishCenter() {
       ) : null}
 
       <div className="panel-padded">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <p className="text-sm text-muted-foreground">
-            {readyProducts.length} ready to publish
+            {readyProducts.length} ready to list
           </p>
           <button
             type="button"
@@ -190,7 +245,7 @@ export function PublishCenter() {
             ) : (
               <Rocket className="h-4 w-4" />
             )}
-            Publish {selectedIds.size > 0 ? `(${selectedIds.size})` : ""}
+            List {selectedIds.size > 0 ? `(${selectedIds.size})` : ""}
           </button>
         </div>
 
@@ -245,9 +300,24 @@ export function PublishCenter() {
 
       {publishedProducts.length > 0 ? (
         <div className="panel-padded space-y-3">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">
-            Listed
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              Listed
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleSyncImages()}
+              disabled={syncingImages || publishing}
+              className="btn-secondary"
+            >
+              {syncingImages ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Sync TikTok images
+            </button>
+          </div>
           <ul className="divide-y divide-border">
             {publishedProducts.map((product) => (
               <li

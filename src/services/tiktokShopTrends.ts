@@ -307,6 +307,8 @@ export function getCuratedTikTokTrendKeywords(): string[] {
   return flattenTrendKeywords().slice(0, 24);
 }
 
+let curatedTrendSnapshot: TikTokShopTrendSnapshot | null = null;
+
 /**
  * Returns the current TikTok Shop trend snapshot.
  * Uses curated bestseller patterns unless live API credentials are configured.
@@ -316,7 +318,12 @@ export async function fetchTikTokShopTrends(): Promise<TikTokShopTrendSnapshot> 
   if (live) {
     return live;
   }
-  return buildCuratedSnapshot();
+
+  if (!curatedTrendSnapshot) {
+    curatedTrendSnapshot = buildCuratedSnapshot();
+  }
+
+  return curatedTrendSnapshot;
 }
 
 function normalizeHaystack(title: string, description: string, category: string): string {

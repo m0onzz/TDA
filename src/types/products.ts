@@ -19,6 +19,11 @@ export interface ProductRawDataShape {
   images?: string[];
   /** Direct vendor CDN URLs (pre-proxy) for the full listing gallery. */
   vendor_listing_images?: string[];
+  /** TikTok Shop main gallery URLs synced from the live listing. */
+  tiktok_shop_images?: string[];
+  /** Original website images kept for UI fallback when TikTok URLs fail. */
+  fallback_images?: string[];
+  tiktok_image_synced_at?: string;
   supplier_name?: string;
   supplier_platform?: string;
   supplier_product_id?: string;
@@ -67,7 +72,7 @@ export interface OptimizedImage {
   type: "main" | "lifestyle" | "detail" | "gallery";
   width: number;
   height: number;
-  source: "supplier";
+  source: "supplier" | "tiktok";
   prompt?: string;
 }
 
@@ -89,6 +94,7 @@ export interface CatalogProduct {
   sellingPrice: number;
   imageUrl: string | null;
   images: string[];
+  fallbackImages: string[];
   supplierName: string | null;
   category: string | null;
   aiTitle: string | null;
