@@ -1,0 +1,68 @@
+# TikTok Dropship Automator — Cursor Rules
+
+You are building a production-grade dropshipping automation platform. Follow these rules in every change.
+
+## TypeScript
+
+- Enable strict typing everywhere. Never use `any`; prefer `unknown` with type guards when types are uncertain.
+- Define shared domain types in `src/types/` (e.g. `Product`, `Order`, `FulfillmentStatus`).
+- Use Zod schemas at API boundaries to validate request/response payloads.
+- Export explicit return types for service functions and API route handlers.
+
+## Architecture
+
+- Use Next.js 14+ App Router conventions: Server Components by default; `"use client"` only when needed.
+- Keep API routes in `src/app/api/` — one concern per route file, thin handlers delegating to `src/lib/services/`.
+- Business logic lives in `src/lib/services/`, not in React components or route handlers.
+- Database access goes through Supabase client helpers in `src/lib/supabase/` (server vs browser clients separated).
+
+## API Routes
+
+- Always return typed JSON responses with consistent shape: `{ data }` on success, `{ error: { message, code? } }` on failure.
+- Wrap handlers in try/catch; log errors server-side, return safe messages to clients.
+- Validate HTTP method, auth session, and input before processing.
+- Use idempotency keys for webhooks and order fulfillment to prevent duplicate processing.
+
+## Security — CRITICAL
+
+- **Never** expose API keys, encrypted credentials, or service-role Supabase keys to the client.
+- Store secrets in environment variables (`OPENAI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, etc.); reference via `process.env` only in server code.
+- Encrypt user-provided API keys at rest before writing to `users` or `suppliers` tables.
+- Verify TikTok webhook signatures before processing order events.
+- Enforce Supabase Row Level Security — users may only access their own rows.
+- Sanitize and validate all external URLs (supplier links, image URLs) before fetching.
+
+## AI Layer
+
+- Use structured outputs (JSON mode / tool calling) for title, description, and tag generation.
+- Keep prompts in `src/lib/ai/prompts/` as versioned templates, not inline strings scattered in code.
+- Track AI processing status on `products.status` and persist errors to `ai_processing_error`.
+
+## Fulfillment
+
+- Route orders only to suppliers with `supports_us_warehouse = true` to meet TikTok's 48-hour shipping SLA.
+- Set `tiktok_deadline_at` on order creation and surface at-risk orders in the dashboard.
+- Log every supplier API call in `fulfillment_attempts` for audit and retry logic.
+
+## UI
+
+- Use Tailwind CSS and shadcn/ui components. Match existing admin layout and sidebar patterns.
+- Keep pages in `src/app/(admin)/` under the shared admin layout.
+- Prefer accessible, semantic HTML; use Lucide icons consistently.
+
+## Error Handling
+
+- Fail gracefully with user-visible toasts/messages; never leak stack traces to the client.
+- Retry transient failures (supplier API, OpenAI rate limits) with exponential backoff.
+- Mark failed records explicitly in the database rather than silently dropping data.
+
+## Testing & Quality
+
+- Run `npm run lint` and `npm run build` before considering work complete.
+- Add unit tests for service-layer logic; integration tests for critical API routes (webhooks, fulfillment).
+
+## File Naming
+
+- Components: PascalCase (`ProductCard.tsx`)
+- Utilities/services: kebab-case or camelCase matching existing files (`product-service.ts`)
+- API routes: RESTful paths (`/api/products`, `/api/webhooks/tiktok`)
