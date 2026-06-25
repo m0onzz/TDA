@@ -37,14 +37,17 @@ export type Database = {
           id: string;
           email: string;
           tiktok_shop_id: string | null;
+          theme: string;
         };
         Insert: {
           id: string;
           email: string;
           tiktok_shop_id?: string | null;
+          theme?: string;
         };
         Update: {
           tiktok_shop_id?: string | null;
+          theme?: string;
         };
         Relationships: [];
       };

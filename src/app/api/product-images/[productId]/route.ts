@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCuratedProductImages } from "@/data/curated-product-images";
+import { isVendorImageUrl } from "@/lib/products/image-cdn";
 
 export const dynamic = "force-dynamic";
-
-const FALLBACK_PICSUM = (productId: string) =>
-  `https://picsum.photos/seed/${encodeURIComponent(productId)}/800/800`;
 
 async function fetchImageBuffer(
   url: string
@@ -60,12 +58,9 @@ export async function GET(
   const index = Math.max(0, Number(searchParams.get("index") ?? "0") || 0);
 
   const curated = getCuratedProductImages(productId);
-  const candidates = [
-    curated[index],
-    curated[0],
-    FALLBACK_PICSUM(`${productId}-${index}`),
-    FALLBACK_PICSUM(productId),
-  ].filter((url): url is string => Boolean(url));
+  const candidates = [curated[index], curated[0]].filter(
+    (url): url is string => Boolean(url) && isVendorImageUrl(url)
+  );
 
   for (const url of candidates) {
     const result = await fetchImageBuffer(url);

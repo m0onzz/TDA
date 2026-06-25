@@ -15,7 +15,10 @@ function isPlaceholderValue(value: string): boolean {
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
+    throw new Error(
+      `Missing required environment variable: ${name}. ` +
+        `Add it to .env.local for local dev or Vercel → Settings → Environment Variables for production, then restart/redeploy.`
+    );
   }
   if (isPlaceholderValue(value)) {
     throw new Error(

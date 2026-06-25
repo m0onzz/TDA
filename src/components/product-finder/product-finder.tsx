@@ -15,7 +15,10 @@ import {
   X,
 } from "lucide-react";
 import { PricingSummary } from "@/components/products/pricing-summary";
+import { calculatePlatformFeeBreakdown } from "@/lib/pricing/listing-pricing";
+import { getProductImageUrl } from "@/lib/products/product-image-url";
 import { AlertBanner } from "@/components/ui/alert-banner";
+import { useFeedback } from "@/components/providers/feedback-provider";
 import type {
   DiscoveredProduct,
   DiscoverSort,
@@ -35,6 +38,7 @@ const SORT_LABELS: Record<DiscoverSort, string> = {
 };
 
 export function ProductFinder() {
+  const { feedback } = useFeedback();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [maxCost, setMaxCost] = useState<number>(25);
@@ -190,8 +194,10 @@ export function ProductFinder() {
       }
 
       setImportedUrls((prev) => new Set(prev).add(product.originalSupplierUrl));
+      feedback("success", "success");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to import product");
+      feedback("error", "error");
     } finally {
       setImportingId(null);
     }
@@ -371,12 +377,11 @@ function ProductCard({
   isImported,
   onImport,
 }: ProductCardProps) {
+  const platformFees = calculatePlatformFeeBreakdown(product.pricing);
   const imageUrls =
     product.imageUrls.length > 0
       ? product.imageUrls
-      : product.imageUrl
-        ? [product.imageUrl]
-        : [`/api/product-images/${product.id}`];
+      : [getProductImageUrl(product.id, 0)];
   const [activeIndex, setActiveIndex] = useState(0);
   const activeImage = imageUrls[activeIndex] ?? imageUrls[0];
   const hasGallery = imageUrls.length > 1;
@@ -483,8 +488,14 @@ function ProductCard({
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-2 border-t border-border pt-4">
-          <span className="text-xs">
-            +${product.profitPerUnit.toFixed(2)} / sale
+          <span className="text-xs leading-relaxed">
+            <span className="text-foreground">
+              +${platformFees.netProfitPerUnit.toFixed(2)} net / sale
+            </span>
+            <span className="text-muted-foreground">
+              {" "}
+              (−${platformFees.platformFeeAmount.toFixed(2)} TikTok fees)
+            </span>
           </span>
           <button
             type="button"

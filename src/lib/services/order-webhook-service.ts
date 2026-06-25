@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { notifyDiscordOrderPlaced } from "@/lib/services/discord-notification-service";
 import type { Json } from "@/types/database";
 import {
   computeTikTokShippingDeadline,
@@ -129,6 +130,7 @@ async function upsertPendingOrder(input: {
   orderTotal: number | null;
   currency: string;
   webhookPayload: TikTokWebhookPayload;
+  shipDeadlineIso: string;
 }): Promise<{ orderId: string; duplicate: boolean }> {
   const admin = createAdminClient();
 
@@ -154,7 +156,7 @@ async function upsertPendingOrder(input: {
       fulfillment_status: "pending",
       order_total: input.orderTotal,
       currency: input.currency,
-      tiktok_deadline_at: computeTikTokShippingDeadline(),
+      tiktok_deadline_at: input.shipDeadlineIso,
       webhook_payload: input.webhookPayload as Json,
       metadata: {
         ingested_via: "tiktok_webhook",
@@ -272,6 +274,8 @@ export async function ingestTikTokOrderWebhook(
     orderWebhook.tiktokProductId
   );
 
+  const shipDeadlineIso = computeTikTokShippingDeadline();
+
   const { orderId, duplicate } = await upsertPendingOrder({
     userId,
     tiktokOrderId: orderWebhook.tiktokOrderId,
@@ -281,7 +285,21 @@ export async function ingestTikTokOrderWebhook(
     orderTotal: orderWebhook.orderTotal,
     currency: orderWebhook.currency,
     webhookPayload: payload,
+    shipDeadlineIso,
   });
+
+  if (!duplicate) {
+    void notifyDiscordOrderPlaced({
+      userId,
+      productId,
+      tiktokOrderId: orderWebhook.tiktokOrderId,
+      orderTotal: orderWebhook.orderTotal,
+      currency: orderWebhook.currency,
+      shipDeadlineIso,
+    }).catch((error: unknown) => {
+      console.error("[order-webhook] Discord notification failed", error);
+    });
+  }
 
   const webhookEventId = await recordWebhookEvent({
     userId,

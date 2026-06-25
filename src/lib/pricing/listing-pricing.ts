@@ -1,3 +1,6 @@
+/** Estimated TikTok Shop + payment fees as % of selling price. */
+export const TIKTOK_PLATFORM_FEE_PERCENT = 10;
+
 export interface ListingPricing {
   costPrice: number;
   sellingPrice: number;
@@ -5,6 +8,51 @@ export interface ListingPricing {
   profitPerUnit: number;
   marginPercent: number;
   currency: string;
+}
+
+export interface PlatformFeeBreakdown {
+  platformFeePercent: number;
+  platformFeeAmount: number;
+  grossProfitPerUnit: number;
+  netProfitPerUnit: number;
+  grossMarginPercent: number;
+  netMarginPercent: number;
+}
+
+export function calculatePlatformFeeBreakdown(
+  pricing: ListingPricing
+): PlatformFeeBreakdown {
+  const platformFeeAmount = roundCurrency(
+    pricing.sellingPrice * (TIKTOK_PLATFORM_FEE_PERCENT / 100)
+  );
+  const netProfitPerUnit = roundCurrency(
+    pricing.sellingPrice - pricing.costPrice - platformFeeAmount
+  );
+  const netMarginPercent =
+    pricing.sellingPrice > 0
+      ? roundCurrency((netProfitPerUnit / pricing.sellingPrice) * 100)
+      : 0;
+
+  return {
+    platformFeePercent: TIKTOK_PLATFORM_FEE_PERCENT,
+    platformFeeAmount,
+    grossProfitPerUnit: pricing.profitPerUnit,
+    netProfitPerUnit,
+    grossMarginPercent: pricing.marginPercent,
+    netMarginPercent,
+  };
+}
+
+export function formatPricingCurrency(
+  amount: number,
+  currency = "USD"
+): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
 }
 
 export function roundCurrency(value: number): number {

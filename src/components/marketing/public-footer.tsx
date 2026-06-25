@@ -3,7 +3,8 @@ import Link from "next/link";
 const footerLinks = [
   { href: "#features", label: "Features" },
   { href: "#how-it-works", label: "How it works" },
-  { href: "/login", label: "Sign in" },
+  { href: "/login", label: "Login" },
+  { href: "/login?mode=signup", label: "Sign up" },
 ] as const;
 
 export function PublicFooter() {
@@ -14,9 +15,9 @@ export function PublicFooter() {
           <div>
             <p className="text-xl font-bold tracking-tight">TDA</p>
             <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-              TikTok dropshipping automation — discover products, optimize
-              listings, and publish to TikTok Shop with 48-hour fulfillment
-              built in.
+              TikTok Shop automation for dropshipping teams — product
+              discovery, pricing, publishing, and US-warehouse fulfillment in
+              one platform.
             </p>
           </div>
 

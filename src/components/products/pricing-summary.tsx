@@ -1,4 +1,8 @@
-import type { ListingPricing } from "@/lib/pricing/listing-pricing";
+import {
+  calculatePlatformFeeBreakdown,
+  formatPricingCurrency,
+  type ListingPricing,
+} from "@/lib/pricing/listing-pricing";
 import { cn } from "@/lib/utils";
 
 interface PricingSummaryProps {
@@ -12,6 +16,10 @@ export function PricingSummary({
   compact = false,
   className,
 }: PricingSummaryProps) {
+  const fees = calculatePlatformFeeBreakdown(pricing);
+  const formatMoney = (amount: number) =>
+    formatPricingCurrency(amount, pricing.currency);
+
   return (
     <div
       className={cn(
@@ -20,32 +28,59 @@ export function PricingSummary({
         className
       )}
     >
-      <div className={cn("grid gap-3", compact ? "grid-cols-2" : "sm:grid-cols-4")}>
-        <PricingCell
-          label="Your cost"
-          value={`$${pricing.costPrice.toFixed(2)}`}
-        />
+      <div
+        className={cn(
+          "grid gap-3",
+          compact ? "grid-cols-2" : "sm:grid-cols-3 lg:grid-cols-6"
+        )}
+      >
+        <PricingCell label="Your cost" value={formatMoney(pricing.costPrice)} />
         <PricingCell
           label="TikTok price"
-          value={`$${pricing.sellingPrice.toFixed(2)}`}
+          value={formatMoney(pricing.sellingPrice)}
           highlight
         />
         <PricingCell
-          label="Profit / unit"
-          value={`$${pricing.profitPerUnit.toFixed(2)}`}
+          label="Gross profit"
+          value={formatMoney(fees.grossProfitPerUnit)}
         />
         <PricingCell
-          label="Margin"
-          value={`${pricing.marginPercent.toFixed(1)}%`}
+          label={`TikTok fees (~${fees.platformFeePercent}%)`}
+          value={`-${formatMoney(fees.platformFeeAmount)}`}
+          muted
+        />
+        <PricingCell
+          label="Net profit"
+          value={formatMoney(fees.netProfitPerUnit)}
+          highlight={!compact}
+        />
+        <PricingCell
+          label="Net margin"
+          value={`${fees.netMarginPercent.toFixed(1)}%`}
           badge
         />
       </div>
-      {!compact ? (
-        <p className="mt-3 text-xs text-muted-foreground">
-          Markup: {pricing.markupPercent.toFixed(0)}% over supplier cost ·{" "}
-          {pricing.currency}
-        </p>
-      ) : null}
+
+      <p
+        className={cn(
+          "text-muted-foreground",
+          compact ? "mt-2 text-[11px] leading-relaxed" : "mt-3 text-xs"
+        )}
+      >
+        {compact ? (
+          <>
+            Gross {fees.grossMarginPercent.toFixed(0)}% margin before fees ·
+            net {fees.netMarginPercent.toFixed(1)}% after TikTok platform fees
+          </>
+        ) : (
+          <>
+            Markup {pricing.markupPercent.toFixed(0)}% over supplier cost ·
+            gross margin {fees.grossMarginPercent.toFixed(1)}% · estimated TikTok
+            Shop + payment fees at ~{fees.platformFeePercent}% of sell price ·{" "}
+            {pricing.currency}
+          </>
+        )}
+      </p>
     </div>
   );
 }
@@ -55,11 +90,13 @@ function PricingCell({
   value,
   highlight,
   badge,
+  muted,
 }: {
   label: string;
   value: string;
   highlight?: boolean;
   badge?: boolean;
+  muted?: boolean;
 }) {
   return (
     <div>
@@ -70,6 +107,7 @@ function PricingCell({
         className={cn(
           "mt-0.5",
           highlight && "text-lg",
+          muted && "text-muted-foreground",
           badge &&
             "mt-1 inline-block rounded-full border border-foreground px-2 py-0.5 text-sm"
         )}

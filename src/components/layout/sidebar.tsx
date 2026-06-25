@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { LayoutGroup, motion } from "framer-motion";
 import {
   LayoutDashboard,
   LogOut,
@@ -13,6 +14,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { signOutAction } from "@/app/(auth)/login/actions";
+import { useFeedback } from "@/components/providers/feedback-provider";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -37,8 +39,10 @@ function getInitials(email: string): string {
 export function Sidebar({ userEmail }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { feedback, settings } = useFeedback();
 
   async function handleSignOut() {
+    feedback("tap", "medium");
     await signOutAction();
     const supabase = createBrowserSupabaseClient();
     await supabase.auth.signOut();
@@ -46,39 +50,63 @@ export function Sidebar({ userEmail }: SidebarProps) {
     router.refresh();
   }
 
+  function handleNavClick(): void {
+    feedback("tap", "light");
+  }
+
   return (
     <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col border-r border-border bg-card">
       <div className="border-b border-border px-5 py-5">
-        <Link href="/dashboard" className="flex items-center gap-3">
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-3"
+          onClick={handleNavClick}
+        >
           <div className="flex h-9 w-9 items-center justify-center rounded-md border-2 border-foreground bg-foreground text-background">
             <Sparkles className="h-4 w-4" strokeWidth={2.5} />
           </div>
           <div className="min-w-0">
-            <p className="text-lg font-bold tracking-tight leading-none">TDA</p>
+            <p className="text-lg font-bold leading-none tracking-tight">TDA</p>
           </div>
         </Link>
       </div>
 
-      <nav className="flex-1 space-y-0.5 p-3">
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const isActive =
-            pathname === href || pathname.startsWith(`${href}/`);
+      <LayoutGroup>
+        <nav className="relative flex-1 space-y-0.5 p-3">
+          {navItems.map(({ href, label, icon: Icon }) => {
+            const isActive =
+              pathname === href || pathname.startsWith(`${href}/`);
 
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                "flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
-                isActive ? "nav-active" : "nav-inactive"
-              )}
-            >
-              <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
+            return (
+              <Link
+                key={href}
+                href={href}
+                onClick={handleNavClick}
+                className={cn(
+                  "relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
+                  isActive ? "text-foreground" : "nav-inactive"
+                )}
+              >
+                {isActive && !settings.reducedMotion ? (
+                  <motion.span
+                    layoutId="sidebar-active"
+                    className="absolute inset-0 rounded-md border-l-2 border-foreground bg-muted"
+                    transition={{
+                      type: "spring",
+                      stiffness: 380,
+                      damping: 32,
+                    }}
+                  />
+                ) : isActive ? (
+                  <span className="absolute inset-0 rounded-md border-l-2 border-foreground bg-muted" />
+                ) : null}
+                <Icon className="relative z-10 h-4 w-4 shrink-0" strokeWidth={2} />
+                <span className="relative z-10">{label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </LayoutGroup>
 
       <div className="border-t border-border p-4">
         <div className="flex items-center gap-3 rounded-md border border-border bg-muted/40 px-3 py-2.5">

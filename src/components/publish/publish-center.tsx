@@ -9,10 +9,12 @@ import {
   XCircle,
 } from "lucide-react";
 import { AlertBanner } from "@/components/ui/alert-banner";
+import { useFeedback } from "@/components/providers/feedback-provider";
 import type { CatalogProduct } from "@/types/products";
 import { cn } from "@/lib/utils";
 
 export function PublishCenter() {
+  const { feedback } = useFeedback();
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -95,6 +97,7 @@ export function PublishCenter() {
           .filter(Boolean)
           .join(" · ");
         setError(messages || "Some products failed to publish");
+        feedback("error", "error");
       } else {
         const simulated = (json.data?.results ?? []).some(
           (result: { mode?: string }) => result.mode === "simulation"
@@ -104,12 +107,14 @@ export function PublishCenter() {
             ? `Simulated publish for ${json.data.summary.succeeded} product(s). Add TikTok credentials in Settings for live listings.`
             : `Published ${json.data.summary.succeeded} product(s) to TikTok Shop.`
         );
+        feedback("success", "success");
       }
 
       setSelectedIds(new Set());
       await loadProducts();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Publish failed");
+      feedback("error", "error");
     } finally {
       setPublishing(false);
     }
@@ -139,6 +144,7 @@ export function PublishCenter() {
 
       if (failed.length > 0) {
         setError(failed[0]?.error ?? "Failed to unlist product");
+        feedback("error", "error");
       } else {
         const simulated = (json.data?.results ?? []).some(
           (result: { mode?: string }) => result.mode === "simulation"
@@ -148,11 +154,13 @@ export function PublishCenter() {
             ? "Product unlisted locally. Add TikTok credentials in Settings for live unlisting."
             : "Product unlisted from TikTok Shop."
         );
+        feedback("success", "success");
       }
 
       await loadProducts();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unlist failed");
+      feedback("error", "error");
     } finally {
       setUnlistingId(null);
     }

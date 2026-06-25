@@ -2,10 +2,8 @@ import {
   type ListingPricing,
   pricingFromStoredPrices,
   roundCurrency,
+  TIKTOK_PLATFORM_FEE_PERCENT,
 } from "@/lib/pricing/listing-pricing";
-
-/** Estimated TikTok Shop + payment fees as % of selling price. */
-const PLATFORM_FEE_PERCENT = 10;
 
 /** Minimum net margin we target after fees. */
 const MIN_NET_MARGIN_PERCENT = 28;
@@ -81,7 +79,7 @@ function targetMarkupForCost(costPrice: number): {
 }
 
 function netMarginPercent(costPrice: number, sellingPrice: number): number {
-  const fees = sellingPrice * (PLATFORM_FEE_PERCENT / 100);
+  const fees = sellingPrice * (TIKTOK_PLATFORM_FEE_PERCENT / 100);
   const netProfit = sellingPrice - costPrice - fees;
   return sellingPrice > 0 ? (netProfit / sellingPrice) * 100 : 0;
 }
@@ -100,7 +98,7 @@ export function calculateOptimalListingPricing(
 
   const { markupPercent, minProfit, rationale } = targetMarkupForCost(costPrice);
 
-  const feeMultiplier = 1 + PLATFORM_FEE_PERCENT / 100;
+  const feeMultiplier = 1 + TIKTOK_PLATFORM_FEE_PERCENT / 100;
   const floorFromProfit = (costPrice + minProfit) * feeMultiplier;
   const floorFromMarkup = costPrice * (1 + markupPercent / 100);
 

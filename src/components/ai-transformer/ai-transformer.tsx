@@ -4,12 +4,15 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ImageIcon, Loader2, TrendingUp, XCircle } from "lucide-react";
 import { PricingSummary } from "@/components/products/pricing-summary";
+import { calculatePlatformFeeBreakdown } from "@/lib/pricing/listing-pricing";
 import { AlertBanner } from "@/components/ui/alert-banner";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { useFeedback } from "@/components/providers/feedback-provider";
 import type { CatalogProduct, ProductStatus } from "@/types/products";
 import { cn } from "@/lib/utils";
 
 export function AiTransformer() {
+  const { feedback } = useFeedback();
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -120,12 +123,19 @@ export function AiTransformer() {
           messages ||
             `${failedResults.length} product(s) failed to optimize. Check that each has a valid cost price.`
         );
+        feedback("error", "error");
+      } else {
+        setSuccessMessage(
+          `Optimized pricing for ${json.data.summary.succeeded} product(s).`
+        );
+        feedback("success", "success");
       }
 
       await loadProducts();
       setSelectedIds(new Set());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Optimization failed");
+      feedback("error", "error");
     } finally {
       setProgress(null);
       setOptimizing(false);
@@ -171,6 +181,7 @@ export function AiTransformer() {
           messages ||
             `${failedResults.length} product(s) failed to unlist.`
         );
+        feedback("error", "error");
       } else {
         const simulated = (json.data?.results ?? []).some(
           (result: { mode?: string }) => result.mode === "simulation"
@@ -180,12 +191,14 @@ export function AiTransformer() {
             ? `Unlisted ${json.data.summary.succeeded} product(s) locally. Add TikTok credentials in Settings for live unlisting.`
             : `Unlisted ${json.data.summary.succeeded} product(s) from TikTok Shop.`
         );
+        feedback("success", "success");
       }
 
       await loadProducts();
       setSelectedIds(new Set());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unlist failed");
+      feedback("error", "error");
     } finally {
       setProgress(null);
       setUnlisting(false);
@@ -337,6 +350,8 @@ function CatalogProductRow({
   onToggle: () => void;
   disabled: boolean;
 }) {
+  const platformFees = calculatePlatformFeeBreakdown(product.pricing);
+
   return (
     <label
       className={cn(
@@ -374,8 +389,10 @@ function CatalogProductRow({
         <p className="truncate text-sm">{product.title}</p>
         <p className="text-xs text-muted-foreground">
           ${product.pricing.costPrice.toFixed(2)} → $
-          {product.pricing.sellingPrice.toFixed(2)} ·{" "}
-          {product.pricing.marginPercent.toFixed(0)}% margin
+          {product.pricing.sellingPrice.toFixed(2)} · $
+          {platformFees.netProfitPerUnit.toFixed(2)} net ·{" "}
+          {platformFees.netMarginPercent.toFixed(0)}% after ~
+          {platformFees.platformFeePercent}% fees
         </p>
         {product.status === "failed" && product.processingError ? (
           <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">

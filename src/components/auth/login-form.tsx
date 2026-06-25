@@ -8,6 +8,7 @@ import {
   signUpAction,
 } from "@/app/(auth)/login/actions";
 import { AlertBanner } from "@/components/ui/alert-banner";
+import { useFeedback } from "@/components/providers/feedback-provider";
 import type { AuthMode } from "@/types/auth";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +16,10 @@ const AUTH_TABS: { mode: AuthMode; label: string }[] = [
   { mode: "signin", label: "Sign in" },
   { mode: "signup", label: "Create account" },
 ];
+
+function getInitialMode(searchParams: URLSearchParams): AuthMode {
+  return searchParams.get("mode") === "signup" ? "signup" : "signin";
+}
 
 function getInitialError(searchParams: URLSearchParams): string | null {
   if (searchParams.get("error") === "auth_callback_failed") {
@@ -24,11 +29,12 @@ function getInitialError(searchParams: URLSearchParams): string | null {
 }
 
 export function LoginForm() {
+  const { feedback } = useFeedback();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") ?? "/dashboard";
 
-  const [mode, setMode] = useState<AuthMode>("signin");
+  const [mode, setMode] = useState<AuthMode>(() => getInitialMode(searchParams));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(() =>
@@ -73,14 +79,17 @@ export function LoginForm() {
 
       if (!result.success) {
         setError(result.message);
+        feedback("error", "error");
         return;
       }
 
+      feedback("success", "success");
       handleRedirect(result.redirectTo);
     } catch {
       setError(
         "Unable to complete authentication. Check your connection and try again."
       );
+      feedback("error", "error");
     } finally {
       setIsSubmitting(false);
     }

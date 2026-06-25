@@ -76,6 +76,9 @@ CREATE TABLE public.users (
   store_settings JSONB NOT NULL DEFAULT '{}'::JSONB,
   -- Example: { "default_markup_percent": 40, "auto_publish": false }
 
+  theme TEXT NOT NULL DEFAULT 'dark'
+    CHECK (theme IN ('dark', 'light', 'midnight', 'high-contrast')),
+
   timezone TEXT NOT NULL DEFAULT 'America/New_York',
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

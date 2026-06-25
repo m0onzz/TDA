@@ -1,8 +1,8 @@
 import { CURATED_PRODUCT_IMAGES as CATALOG_IMAGES } from "@/data/supplier-product-catalog";
 
 /**
- * Remote source URLs fetched server-side via /api/product-images.
- * Unsplash CDN URLs are stable, crop to 800×800 (TikTok Shop 1:1), and work from server fetch.
+ * Vendor CDN URLs proxied server-side via /api/product-images.
+ * Images are sourced from dropship supplier catalogs (CJ / Zendrop / AutoDS), not stock libraries.
  */
 export const CURATED_PRODUCT_IMAGES: Record<string, string[]> = CATALOG_IMAGES;
 

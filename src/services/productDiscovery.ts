@@ -21,6 +21,10 @@ import {
   getRotationTrendingBoost,
 } from "@/lib/catalog/rotation";
 import { CATALOG_SIZE } from "@/data/supplier-product-catalog";
+import {
+  getProductImageUrl,
+  getProductImageUrls,
+} from "@/lib/products/product-image-url";
 import type {
   DiscoveredProduct,
   DiscoveredVendorInfo,
@@ -166,12 +170,14 @@ function toDiscoveredProduct(
     },
   };
 
+  const productId = pipeline.raw_data.supplier_product_id;
+
   return {
-    id: pipeline.raw_data.supplier_product_id,
+    id: productId,
     title: pipeline.raw_data.title,
     description: pipeline.raw_data.description,
-    imageUrl: pipeline.raw_data.images[0] ?? "",
-    imageUrls: pipeline.raw_data.images,
+    imageUrl: getProductImageUrl(productId, 0),
+    imageUrls: getProductImageUrls(productId),
     category: pipeline.raw_data.category,
     costPrice: pricing.costPrice,
     suggestedSellPrice: pricing.sellingPrice,
