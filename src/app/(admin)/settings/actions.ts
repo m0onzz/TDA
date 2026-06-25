@@ -9,6 +9,13 @@ import {
   revokeCredential,
   storeCredential,
 } from "@/lib/services/credential-service";
+import {
+  getTikTokServerEnvStatus,
+  parseTikTokShopCredentialJson,
+  serializeTikTokShopCredential,
+  validateTikTokShopCredentialFields,
+  type TikTokShopCredentialFields,
+} from "@/lib/tiktok/credential-format";
 import { parseTikTokShopCredentials } from "@/lib/tiktok/shop-client";
 import { testTikTokShopConnection } from "@/lib/tiktok/shop-request";
 import type { CredentialMetadata } from "@/lib/credentials/metadata";
@@ -46,6 +53,26 @@ const saveCredentialInputSchema = z.object({
 const revokeCredentialInputSchema = z.object({
   id: z.string().uuid("Invalid credential id"),
 });
+
+const saveTikTokShopCredentialInputSchema = z.object({
+  accessToken: z.string().max(4096),
+  appKey: z.string().max(512).optional(),
+  appSecret: z.string().max(512).optional(),
+  shopCipher: z.string().max(512).optional(),
+});
+
+const saveTikTokShopJsonCredentialInputSchema = z.object({
+  rawJson: z.string().min(1, "Paste your credential JSON").max(8192),
+});
+
+export interface TikTokSetupStatus {
+  serverEnv: ReturnType<typeof getTikTokServerEnvStatus>;
+  storedCredential: {
+    configured: boolean;
+    credentialId: string | null;
+    maskedKey: string | null;
+  };
+}
 
 async function requireUser(): Promise<
   SettingsActionResult<{ id: string; email: string }>
@@ -146,6 +173,140 @@ export async function revokeCredentialAction(
       success: false,
       code: "SERVER_ERROR",
       message: "Failed to revoke credential.",
+    };
+  }
+}
+
+export async function getTikTokSetupStatusAction(): Promise<
+  SettingsActionResult<TikTokSetupStatus>
+> {
+  const auth = await requireUser();
+  if (!auth.success) return auth;
+
+  try {
+    const credentials = await listCredentialMetadata(auth.data.id);
+    const tiktokCredential = credentials.find(
+      (credential) => credential.provider === "tiktok_shop"
+    );
+
+    return {
+      success: true,
+      data: {
+        serverEnv: getTikTokServerEnvStatus(),
+        storedCredential: {
+          configured: Boolean(tiktokCredential),
+          credentialId: tiktokCredential?.id ?? null,
+          maskedKey: tiktokCredential?.maskedKey ?? null,
+        },
+      },
+    };
+  } catch (error) {
+    console.error("[getTikTokSetupStatusAction]", error);
+    return {
+      success: false,
+      code: "SERVER_ERROR",
+      message: "Failed to load TikTok Shop setup status.",
+    };
+  }
+}
+
+export async function saveTikTokShopCredentialAction(
+  input: z.infer<typeof saveTikTokShopCredentialInputSchema>
+): Promise<SettingsActionResult<{ id: string }>> {
+  const auth = await requireUser();
+  if (!auth.success) return auth;
+
+  const parsed = saveTikTokShopCredentialInputSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      success: false,
+      code: "VALIDATION_ERROR",
+      message: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
+
+  const envStatus = getTikTokServerEnvStatus();
+  const validated = validateTikTokShopCredentialFields(
+    parsed.data as TikTokShopCredentialFields,
+    envStatus
+  );
+
+  if (!validated.ok) {
+    return {
+      success: false,
+      code: "VALIDATION_ERROR",
+      message: validated.message,
+    };
+  }
+
+  const secret = serializeTikTokShopCredential(validated.data);
+
+  try {
+    const id = await storeCredential(auth.data.id, {
+      provider: "tiktok_shop",
+      lookupKey: PROVIDER_LOOKUP_KEYS.tiktok_shop,
+      secret,
+      name: CREDENTIAL_PROVIDER_LABELS.tiktok_shop,
+    });
+
+    revalidatePath("/settings");
+
+    return { success: true, data: { id } };
+  } catch (error) {
+    console.error("[saveTikTokShopCredentialAction]", error);
+    return {
+      success: false,
+      code: "SERVER_ERROR",
+      message: "Failed to save TikTok Shop credentials securely.",
+    };
+  }
+}
+
+export async function saveTikTokShopJsonCredentialAction(
+  input: z.infer<typeof saveTikTokShopJsonCredentialInputSchema>
+): Promise<SettingsActionResult<{ id: string }>> {
+  const auth = await requireUser();
+  if (!auth.success) return auth;
+
+  const parsed = saveTikTokShopJsonCredentialInputSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      success: false,
+      code: "VALIDATION_ERROR",
+      message: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
+
+  const envStatus = getTikTokServerEnvStatus();
+  const validated = parseTikTokShopCredentialJson(parsed.data.rawJson, envStatus);
+
+  if (!validated.ok) {
+    return {
+      success: false,
+      code: "VALIDATION_ERROR",
+      message: validated.message,
+    };
+  }
+
+  const secret = serializeTikTokShopCredential(validated.data);
+
+  try {
+    const id = await storeCredential(auth.data.id, {
+      provider: "tiktok_shop",
+      lookupKey: PROVIDER_LOOKUP_KEYS.tiktok_shop,
+      secret,
+      name: CREDENTIAL_PROVIDER_LABELS.tiktok_shop,
+    });
+
+    revalidatePath("/settings");
+
+    return { success: true, data: { id } };
+  } catch (error) {
+    console.error("[saveTikTokShopJsonCredentialAction]", error);
+    return {
+      success: false,
+      code: "SERVER_ERROR",
+      message: "Failed to save TikTok Shop credentials securely.",
     };
   }
 }

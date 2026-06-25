@@ -1,3 +1,4 @@
+import { describeMissingTikTokCredentials } from "@/lib/tiktok/credential-format";
 import {
   ensureShopCipher,
   resolveTikTokShopCredentials,
@@ -98,7 +99,7 @@ export async function publishProductToTikTokShop(
   const resolved = resolveTikTokShopCredentials(credentials);
   if (!resolved) {
     throw new TikTokShopApiError(
-      "TikTok app_key and app_secret are required for live listing. Save them in Settings JSON or set TIKTOK_APP_KEY / TIKTOK_APP_SECRET on the server."
+      `${describeMissingTikTokCredentials()} Live listing requires a complete setup.`
     );
   }
 

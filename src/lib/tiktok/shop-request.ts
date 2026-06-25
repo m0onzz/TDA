@@ -1,3 +1,4 @@
+import { describeMissingTikTokCredentials } from "@/lib/tiktok/credential-format";
 import type { TikTokShopCredentials } from "@/lib/tiktok/shop-client";
 import {
   buildTikTokShopTimestamp,
@@ -215,8 +216,7 @@ export async function testTikTokShopConnection(
     return {
       ok: false,
       mode: "not_configured",
-      message:
-        "Missing TikTok credentials. Save access_token plus app_key and app_secret (JSON), or set TIKTOK_APP_KEY and TIKTOK_APP_SECRET on the server.",
+      message: describeMissingTikTokCredentials(),
     };
   }
 

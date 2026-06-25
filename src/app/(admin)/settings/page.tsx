@@ -4,6 +4,7 @@ import { DiscordWebhookSettings } from "@/components/settings/discord-webhook-se
 import { ExperienceSettings } from "@/components/settings/experience-settings";
 import { PayoutSettings } from "@/components/settings/payout-settings";
 import { ThemeSettings } from "@/components/settings/theme-settings";
+import { TikTokShopSettings } from "@/components/settings/tiktok-shop-settings";
 
 export default function SettingsPage() {
   return (
@@ -17,6 +18,7 @@ export default function SettingsPage() {
         <ThemeSettings />
         <DiscordWebhookSettings />
         <ExperienceSettings />
+        <TikTokShopSettings />
         <CredentialManager />
       </div>
     </>

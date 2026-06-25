@@ -5,7 +5,6 @@ import {
   getCredentialsAction,
   revokeCredentialAction,
   saveCredentialAction,
-  testTikTokConnectionAction,
 } from "@/app/(admin)/settings/actions";
 import { UnauthorizedAlert } from "@/components/settings/unauthorized-alert";
 import { AlertBanner } from "@/components/ui/alert-banner";
@@ -14,11 +13,7 @@ import type { CredentialProvider } from "@/types/credentials";
 import { CREDENTIAL_PROVIDER_LABELS } from "@/types/credentials";
 import { cn } from "@/lib/utils";
 
-const USER_MANAGED_PROVIDERS: CredentialProvider[] = [
-  "tiktok_shop",
-  "supplier",
-  "custom",
-];
+const USER_MANAGED_PROVIDERS: CredentialProvider[] = ["supplier", "custom"];
 
 type AuthState = "loading" | "authenticated" | "unauthorized";
 
@@ -32,14 +27,13 @@ function formatDate(iso: string): string {
 export function CredentialManager() {
   const [authState, setAuthState] = useState<AuthState>("loading");
   const [credentials, setCredentials] = useState<CredentialMetadata[]>([]);
-  const [provider, setProvider] = useState<CredentialProvider>("tiktok_shop");
+  const [provider, setProvider] = useState<CredentialProvider>("supplier");
   const [secret, setSecret] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [isSaving, startSaveTransition] = useTransition();
   const [isRefreshing, startRefreshTransition] = useTransition();
-  const [isTestingConnection, startTestTransition] = useTransition();
 
   const loadCredentials = useCallback(() => {
     startRefreshTransition(async () => {
@@ -60,7 +54,11 @@ export function CredentialManager() {
       }
 
       setAuthState("authenticated");
-      setCredentials(result.data.credentials);
+      setCredentials(
+        result.data.credentials.filter(
+          (credential) => credential.provider !== "tiktok_shop"
+        )
+      );
     });
   }, []);
 
@@ -85,28 +83,8 @@ export function CredentialManager() {
       }
 
       setSecret("");
-      setSuccessMessage("Credential saved securely to Vault.");
+      setSuccessMessage("Credential saved securely.");
       loadCredentials();
-    });
-  }
-
-  function handleTestConnection(): void {
-    setError(null);
-    setSuccessMessage(null);
-
-    startTestTransition(async () => {
-      const result = await testTikTokConnectionAction();
-
-      if (!result.success) {
-        setError(result.message);
-        return;
-      }
-
-      if (result.data.ok) {
-        setSuccessMessage(result.data.message);
-      } else {
-        setError(result.data.message);
-      }
     });
   }
 
@@ -147,56 +125,15 @@ export function CredentialManager() {
     <div className="space-y-6">
       <div className="panel-padded text-sm text-muted-foreground">
         <p className="text-xs uppercase tracking-wide text-foreground">
-          TikTok Shop credentials
+          Other API credentials
         </p>
         <p className="mt-2">
-          Add your TikTok Shop access token to list products live. Without
-          credentials, listing runs in simulation mode so you can test the full
-          workflow locally. If listing fails after saving, revoke the credential
-          and save it again.
+          Store supplier or custom integration keys. TikTok Shop uses the
+          dedicated section above.
         </p>
       </div>
 
       <form onSubmit={handleSave} className="panel-padded space-y-4">
-        <div>
-          <h2 className="text-sm uppercase tracking-wide">Add or rotate key</h2>
-          <p className="mt-1.5 text-sm text-muted-foreground">
-            For live TikTok API calls, paste JSON with{" "}
-            <code className="rounded border border-border bg-muted px-1">
-              access_token
-            </code>
-            ,{" "}
-            <code className="rounded border border-border bg-muted px-1">
-              app_key
-            </code>
-            , and{" "}
-            <code className="rounded border border-border bg-muted px-1">
-              app_secret
-            </code>
-            . Optional:{" "}
-            <code className="rounded border border-border bg-muted px-1">
-              shop_cipher
-            </code>
-            . You can also set{" "}
-            <code className="rounded border border-border bg-muted px-1">
-              TIKTOK_APP_KEY
-            </code>{" "}
-            /{" "}
-            <code className="rounded border border-border bg-muted px-1">
-              TIKTOK_APP_SECRET
-            </code>{" "}
-            on the server.
-          </p>
-          <pre className="mt-3 overflow-x-auto rounded-md border border-border bg-muted/30 p-3 text-left text-xs text-muted-foreground">
-{`{
-  "access_token": "your_token",
-  "app_key": "your_app_key",
-  "app_secret": "your_app_secret",
-  "shop_cipher": "optional_shop_cipher"
-}`}
-          </pre>
-        </div>
-
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="space-y-1.5 text-sm">
             <span className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -233,23 +170,13 @@ export function CredentialManager() {
           </label>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="submit"
-            disabled={isSaving || !secret.trim()}
-            className="btn-primary"
-          >
-            {isSaving ? "Saving…" : "Save securely"}
-          </button>
-          <button
-            type="button"
-            onClick={handleTestConnection}
-            disabled={isTestingConnection || isSaving}
-            className="btn-secondary"
-          >
-            {isTestingConnection ? "Testing…" : "Test TikTok connection"}
-          </button>
-        </div>
+        <button
+          type="submit"
+          disabled={isSaving || !secret.trim()}
+          className="btn-primary"
+        >
+          {isSaving ? "Saving…" : "Save securely"}
+        </button>
       </form>
 
       {successMessage ? (
@@ -272,7 +199,7 @@ export function CredentialManager() {
 
         {credentials.length === 0 ? (
           <p className="px-6 py-8 text-sm text-muted-foreground">
-            No credentials saved yet.
+            No supplier or custom credentials saved yet.
           </p>
         ) : (
           <ul className="divide-y divide-border">
